@@ -1,26 +1,60 @@
 # 🚀 Bando AI Project
 
-Benvenuto nel progetto Bando AI! Questo documento è una guida passo-passo pensata per farti configurare e avviare il progetto sul tuo computer nel minor tempo possibile e senza errori.
-
-Questo progetto è composto da due parti principali:
-1. **Infrastruttura Backend (Docker)**: n8n (il motore per i workflow), il Task Runner (per eseguire codice Python) e MongoDB (il database).
-2. **Frontend (React)**: L'interfaccia utente web per interagire con l'intelligenza artificiale.
+Benvenuto nel progetto Bando AI! Questo repository contiene una **piattaforma di automazione basata su n8n con frontend React**, progettata per la gestione e l'analisi intelligente di documenti PDF.
 
 ---
 
-## 🛑 Prerequisiti: Cosa devi avere installato PRIMA di iniziare
+## 🏗️ Architettura del Progetto
+
+Il progetto è diviso in due macro-aree: l'infrastruttura backend (eseguita interamente tramite Docker) e l'interfaccia utente frontend.
+
+```text
+┌─────────────────────────────────────────────────────┐
+│                  Docker Compose                     │
+│                                                     │
+│  ┌──────────┐  ┌────────────┐  ┌──────────────────┐ │
+│  │   n8n    │──│ n8n-runner │  │    MongoDB       │ │ 
+│  │ :5678    │  │ (Python/JS)│  │    :27017        │ │
+│  └──────────┘  └────────────┘  └──────────────────┘ │
+│                                 ┌──────────────────┐│
+│                                 │  Mongo Express   ││
+│                                 │  :8081           ││
+│                                 └──────────────────┘│
+└─────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────┐
+│  Frontend React (:5173)                             │
+└─────────────────────────────────────────────────────┘
+```
+
+### Struttura delle Cartelle
+
+```text
+bando-ai-project/
+├── docker-compose.yml          # Infrastruttura (n8n, MongoDB, runner)
+├── n8n-task-runners.json       # Policy di sicurezza del runner Python
+├── frontend/                   # App React (UI)
+│   ├── src/
+│   ├── package.json
+│   └── ...
+├── .env.example                # Template per le password
+├── .gitignore                  # File e cartelle esclusi da Git
+└── README.md                   # Questo documento
+```
+
+---
+
+## 📚 Guida al Setup (Per il Team)
+
+Questa sezione è una guida passo-passo pensata per farti configurare e avviare il progetto sul tuo computer nel minor tempo possibile e senza errori.
+
+### 🛑 Prerequisiti: Cosa devi avere installato PRIMA di iniziare
 
 Se non hai questi programmi installati, il progetto non funzionerà. Assicurati di averli:
 
-1. **[Git](https://git-scm.com/downloads)**: Per scaricare il codice.
-2. **[Docker Desktop](https://www.docker.com/products/docker-desktop/)**: Deve essere installato e **avviato** (l'icona della balena deve essere visibile nel tuo sistema).
-3. **[Node.js](https://nodejs.org/it/download/)**: Scarica la versione "LTS" (raccomandata per la maggior parte degli utenti).
-
----
-
-## 🛠️ Guida al Setup (da fare solo la prima volta)
-
-Segui questi passaggi nell'ordine esatto:
+1. **[Git](https://git-scm.com/downloads)**: Per scaricare il codice e gestire le versioni.
+2. **[Docker Desktop](https://www.docker.com/products/docker-desktop/)**: Deve essere installato e **avviato** (l'icona della balena deve essere visibile e attiva nel tuo sistema).
+3. **[Node.js](https://nodejs.org/it/download/)**: Scarica la versione "LTS" (raccomandata). Serve per avviare il frontend.
 
 ### Step 1: Scarica il codice
 Apri il terminale (o il Prompt dei comandi su Windows) e lancia:
@@ -43,7 +77,7 @@ Assicurati che Docker Desktop sia aperto e funzionante, poi dal terminale, nella
 ```bash
 docker compose up -d
 ```
-*Cosa fa questo comando?* Scarica tutto il necessario, crea il database e avvia n8n. La prima volta potrebbe impiegare qualche minuto. Il `-d` significa che continuerà a girare in background in modo da lasciarti usare il terminale.
+*Cosa fa questo comando?* Scarica tutto il necessario, crea il database e avvia l'orchestratore n8n. La prima volta potrebbe impiegare qualche minuto. Il `-d` significa che continuerà a girare in background in modo da lasciarti usare il terminale.
 
 ### Step 4: Avvia il Frontend (React)
 Ora dobbiamo accendere l'interfaccia grafica. Spostati nella cartella del frontend e installa le librerie necessarie:
@@ -114,4 +148,4 @@ Per evitare di sovrascriverci il lavoro a vicenda o rompere l'applicazione princ
 
 * 🔴 **MAI E POI MAI** inviare il file `.env` su GitHub. Se lo fai, le password del database diventano pubbliche. (Il file `.gitignore` dovrebbe già proteggerti, ma fai sempre attenzione).
 * 🔴 Se modifichi il file `docker-compose.yml`, avvisa il team! Affinché le modifiche abbiano effetto, dovrai eseguire di nuovo `docker compose down` e poi `docker compose up -d`.
-* 🔴 I permessi di quali moduli Python il server può eseguire sono decisi nel file `n8n-task-runners.json`. Non aggiungere librerie a caso in quel file senza consultare il team, per questioni di sicurezza. Se hai dubbi su questo, chiedi a Federico.
+* 🔴 I permessi di quali moduli Python il server può eseguire sono decisi nel file `n8n-task-runners.json`. Non aggiungere librerie a caso in quel file senza consultare il team, per questioni di sicurezza.
