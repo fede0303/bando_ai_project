@@ -35,7 +35,7 @@ services:
       - N8N_SECURE_COOKIE=false                                     # Necessario per accesso HTTP locale (non HTTPS)
       - N8N_RUNNERS_ENABLED=true                                    # Abilita il sistema Task Runner
       - N8N_RUNNERS_MODE=external                                   # Modalità esterna: il runner gira in un container separato
-      - N8N_RUNNERS_AUTH_TOKEN=bando_ai_project_secret_token_2026   # Token di autenticazione condiviso con il runner
+      - N8N_RUNNERS_AUTH_TOKEN=${N8N_RUNNERS_AUTH_TOKEN}   # Token letto dal file .env
       - N8N_RUNNERS_BROKER_LISTEN_ADDRESS=0.0.0.0                   # Il broker accetta connessioni da qualsiasi interfaccia di rete
       # NOTA: Le policy di sicurezza per Python (moduli stdlib consentiti)
       # sono gestite nel file n8n-task-runners.json, montato nel container
@@ -68,7 +68,7 @@ services:
     image: n8nio/runners:latest
     restart: always
     environment:
-      - N8N_RUNNERS_AUTH_TOKEN=bando_ai_project_secret_token_2026   # Deve corrispondere al token del server n8n
+      - N8N_RUNNERS_AUTH_TOKEN=${N8N_RUNNERS_AUTH_TOKEN}   # Deve corrispondere al token del server n8n
       - N8N_RUNNERS_TASK_BROKER_URI=http://n8n:5679                 # URI del broker n8n (usa il nome del servizio Docker)
     volumes:
       # Policy di sicurezza per l'esecuzione del codice Python/JS.
@@ -93,8 +93,8 @@ services:
     container_name: mongodb
     restart: always
     environment:
-      - MONGO_INITDB_ROOT_USERNAME=admin          # Utente amministratore del database
-      - MONGO_INITDB_ROOT_PASSWORD=supersegreta   # Password dell'amministratore (da cambiare in produzione)
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_ROOT_USERNAME}          # Utente amministratore del database
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_ROOT_PASSWORD}          # Password dell'amministratore
     ports:
       - "27017:27017"   # Porta standard MongoDB
     volumes:
@@ -120,10 +120,10 @@ services:
     environment:
       - ME_CONFIG_MONGODB_SERVER=mongodb                # Nome del servizio MongoDB nella rete Docker
       - ME_CONFIG_MONGODB_PORT=27017                    # Porta di connessione a MongoDB
-      - ME_CONFIG_MONGODB_ADMINUSERNAME=admin            # Credenziali MongoDB (devono corrispondere a quelle sopra)
-      - ME_CONFIG_MONGODB_ADMINPASSWORD=supersegreta
-      - ME_CONFIG_BASICAUTH_USERNAME=admin               # Credenziali di accesso all'interfaccia web
-      - ME_CONFIG_BASICAUTH_PASSWORD=pass
+      - ME_CONFIG_MONGODB_ADMINUSERNAME=${MONGO_ROOT_USERNAME}           # Credenziali MongoDB (devono corrispondere a quelle sopra)
+      - ME_CONFIG_MONGODB_ADMINPASSWORD=${MONGO_ROOT_PASSWORD}
+      - ME_CONFIG_BASICAUTH_USERNAME=${ME_BASICAUTH_USERNAME}            # Credenziali di accesso all'interfaccia web
+      - ME_CONFIG_BASICAUTH_PASSWORD=${ME_BASICAUTH_PASSWORD}
     depends_on:
       - mongodb   # Mongo Express si avvia solo dopo MongoDB
     networks:
