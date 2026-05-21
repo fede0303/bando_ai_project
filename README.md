@@ -1,98 +1,117 @@
-# Bando AI Project
+# 🚀 Bando AI Project
 
-Piattaforma di automazione basata su n8n con frontend React per la gestione e analisi di documenti PDF.
+Benvenuto nel progetto Bando AI! Questo documento è una guida passo-passo pensata per farti configurare e avviare il progetto sul tuo computer nel minor tempo possibile e senza errori.
 
-## Architettura
+Questo progetto è composto da due parti principali:
+1. **Infrastruttura Backend (Docker)**: n8n (il motore per i workflow), il Task Runner (per eseguire codice Python) e MongoDB (il database).
+2. **Frontend (React)**: L'interfaccia utente web per interagire con l'intelligenza artificiale.
 
-```
-┌─────────────────────────────────────────────────────┐
-│                  Docker Compose                     │
-│                                                     │
-│  ┌──────────┐  ┌────────────┐  ┌──────────────────┐ │
-│  │   n8n    │──│ n8n-runner │  │    MongoDB       │ │ 
-│  │ :5678    │  │ (Python/JS)│  │    :27017        │ │
-│  └──────────┘  └────────────┘  └──────────────────┘ │
-│                                 ┌──────────────────┐│
-│                                 │  Mongo Express   ││
-│                                 │  :8081           ││
-│                                 └──────────────────┘│
-└─────────────────────────────────────────────────────┘
+---
 
-┌─────────────────────────────────────────────────────┐
-│  Frontend React (:5173)                             │
-└─────────────────────────────────────────────────────┘
-```
+## 🛑 Prerequisiti: Cosa devi avere installato PRIMA di iniziare
 
-## Prerequisiti
+Se non hai questi programmi installati, il progetto non funzionerà. Assicurati di averli:
 
-- [Docker](https://docs.docker.com/get-docker/) e Docker Compose
-- [Node.js](https://nodejs.org/) (v18+)
-- [Git](https://git-scm.com/)
+1. **[Git](https://git-scm.com/downloads)**: Per scaricare il codice.
+2. **[Docker Desktop](https://www.docker.com/products/docker-desktop/)**: Deve essere installato e **avviato** (l'icona della balena deve essere visibile nel tuo sistema).
+3. **[Node.js](https://nodejs.org/it/download/)**: Scarica la versione "LTS" (raccomandata per la maggior parte degli utenti).
 
-## Setup rapido
+---
 
-### 1. Clona il repository
+## 🛠️ Guida al Setup (da fare solo la prima volta)
 
+Segui questi passaggi nell'ordine esatto:
+
+### Step 1: Scarica il codice
+Apri il terminale (o il Prompt dei comandi su Windows) e lancia:
 ```bash
-git clone https://github.com/TUO-USERNAME/bando-ai-project.git
+git clone https://github.com/fede0303/bando-ai-project.git
 cd bando-ai-project
 ```
 
-### 2. Configura le variabili d'ambiente
+### Step 2: Configura le password e le chiavi segrete
+Per motivi di sicurezza, le password non sono salvate su GitHub. Abbiamo preparato un file di esempio chiamato `.env.example`.
 
-```bash
-cp .env.example .env
-# Modifica .env con le tue credenziali
-```
+1. Trova il file `.env.example` nella cartella principale del progetto.
+2. **Copia** quel file e rinominalo in `.env` (assicurati che ci sia il punto all'inizio e non ci siano estensioni nascoste).
+   *Da terminale puoi fare:* `cp .env.example .env` (su Mac/Linux)
+3. Apri il file `.env` che hai appena creato con un editor di testo e compila le variabili inserendo le password concordate con il team.
+4. **Salva il file**. Git ignorerà automaticamente questo file, quindi i tuoi segreti sono al sicuro.
 
-### 3. Avvia l'infrastruttura Docker
-
+### Step 3: Avvia il Backend (Docker)
+Assicurati che Docker Desktop sia aperto e funzionante, poi dal terminale, nella cartella principale (`bando-ai-project`), scrivi:
 ```bash
 docker compose up -d
 ```
+*Cosa fa questo comando?* Scarica tutto il necessario, crea il database e avvia n8n. La prima volta potrebbe impiegare qualche minuto. Il `-d` significa che continuerà a girare in background in modo da lasciarti usare il terminale.
 
-### 4. Avvia il frontend
-
+### Step 4: Avvia il Frontend (React)
+Ora dobbiamo accendere l'interfaccia grafica. Spostati nella cartella del frontend e installa le librerie necessarie:
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
+*Cosa fa questo comando?* `npm install` scarica tutte le dipendenze di React (va fatto solo la prima volta o se cambiano). `npm run dev` avvia il sito web.
 
-## Servizi e porte
+🎉 **Finito! Il progetto è ora in esecuzione.**
 
-| Servizio       | URL                          | Descrizione                     |
-|----------------|------------------------------|---------------------------------|
-| n8n            | http://localhost:5678        | Interfaccia workflow            |
-| Mongo Express  | http://localhost:8081        | Gestione database               |
-| Frontend React | http://localhost:5173        | Interfaccia utente              |
+---
 
-## Struttura del progetto
+## 🌐 Dove trovo i servizi avviati?
 
-```
-bando-ai-project/
-├── docker-compose.yml          # Infrastruttura (n8n, MongoDB, runner)
-├── n8n-task-runners.json       # Policy di sicurezza del runner Python
-├── frontend/                   # App React
-│   ├── src/
-│   ├── package.json
-│   └── ...
-├── .env.example                # Template variabili d'ambiente
-├── .gitignore                  # File esclusi da Git
-└── README.md                   # Questa documentazione
-```
+Una volta avviato tutto, puoi aprire il tuo browser e visitare questi link:
 
-## Collaborazione
+| Cosa cerchi? | Dove cliccare / URL | Credenziali di accesso |
+|---|---|---|
+| **L'App Web Frontend** | [http://localhost:5173](http://localhost:5173) | Nessuna per ora |
+| **Pannello di n8n (Workflow)** | [http://localhost:5678](http://localhost:5678) | Se richieste, vedi config n8n |
+| **Pannello Database (Mongo Express)** | [http://localhost:8081](http://localhost:8081) | Utente: `admin` / Password: *(vedi file .env)* |
 
-### Workflow Git
+---
 
-1. Crea un branch per la tua feature: `git checkout -b feature/nome-feature`
-2. Fai le modifiche e committale: `git add . && git commit -m "descrizione"`
-3. Pusha il branch: `git push origin feature/nome-feature`
-4. Apri una Pull Request su GitHub per la revisione
+## ⏸️ Come spegnere il progetto a fine giornata
 
-### Regole importanti
+Per non sprecare risorse del tuo computer, quando finisci di lavorare spegni tutto:
 
-- **Non committare mai** il file `.env` (contiene le password)
-- **Non modificare** `n8n-task-runners.json` senza avvisare il team
-- Dopo ogni modifica al `docker-compose.yml`, riavvia con `docker compose down && docker compose up -d`
+1. **Spegni il frontend**: Vai nel terminale dove hai lanciato `npm run dev` e premi `Ctrl + C`.
+2. **Spegni Docker**: Torna nella cartella principale del progetto (`cd ..`) e scrivi:
+   ```bash
+   docker compose down
+   ```
+   *(Tranquillo, i dati salvati nel database non andranno persi, sono al sicuro in un volume dedicato!)*
+
+---
+
+## 🤝 Regole per lavorare in Team (Flusso Git)
+
+Per evitare di sovrascriverci il lavoro a vicenda o rompere l'applicazione principale, usiamo questo semplice metodo:
+
+1. **Mai lavorare sul ramo `main`**: Prima di iniziare a modificare qualcosa, scarica gli ultimi aggiornamenti e crea un tuo ramo di lavoro:
+   ```bash
+   git checkout main
+   git pull
+   git checkout -b nome-del-tuo-ramo
+   # (es: git checkout -b fix-bottone-login)
+   ```
+
+2. **Salva il tuo lavoro regolarmente**:
+   ```bash
+   git add .
+   git commit -m "Descrivi in modo chiaro cosa hai modificato"
+   ```
+
+3. **Invia il tuo lavoro su GitHub**:
+   ```bash
+   git push origin nome-del-tuo-ramo
+   ```
+
+4. **Chiedi di unire le modifiche**: Vai su GitHub e apri una "Pull Request" (PR). Qualcun altro del team la controllerà e la unirà al ramo `main`.
+
+---
+
+## ⚠️ Regole D'Oro (da non infrangere mai)
+
+* 🔴 **MAI E POI MAI** inviare il file `.env` su GitHub. Se lo fai, le password del database diventano pubbliche. (Il file `.gitignore` dovrebbe già proteggerti, ma fai sempre attenzione).
+* 🔴 Se modifichi il file `docker-compose.yml`, avvisa il team! Affinché le modifiche abbiano effetto, dovrai eseguire di nuovo `docker compose down` e poi `docker compose up -d`.
+* 🔴 I permessi di quali moduli Python il server può eseguire sono decisi nel file `n8n-task-runners.json`. Non aggiungere librerie a caso in quel file senza consultare il team, per questioni di sicurezza. Se hai dubbi su questo, chiedi a Federico.
