@@ -1,151 +1,199 @@
-# 🚀 Bando AI Project
+# Bando AI
 
-Benvenuto nel progetto Bando AI! Questo repository contiene una **piattaforma di automazione basata su n8n con frontend React**, progettata per la gestione e l'analisi intelligente di documenti PDF.
+Sistema di automazione per la gestione e l'analisi di documenti PDF, costruito su un'architettura a microservizi orchestrata da n8n con interfaccia utente in React.
 
----
+## Panoramica
 
-## 🏗️ Architettura del Progetto
+Il progetto nasce dall'esigenza di automatizzare l'analisi documentale nell'ambito dei bandi pubblici. L'infrastruttura si compone di quattro servizi containerizzati che collaborano tramite una rete Docker interna, affiancati da un'applicazione frontend indipendente.
 
-Il progetto è diviso in due macro-aree: l'infrastruttura backend (eseguita interamente tramite Docker) e l'interfaccia utente frontend.
+### Architettura
 
 ```text
-┌─────────────────────────────────────────────────────┐
-│                  Docker Compose                     │
-│                                                     │
-│  ┌──────────┐  ┌────────────┐  ┌──────────────────┐ │
-│  │   n8n    │──│ n8n-runner │  │    MongoDB       │ │ 
-│  │ :5678    │  │ (Python/JS)│  │    :27017        │ │
-│  └──────────┘  └────────────┘  └──────────────────┘ │
-│                                 ┌──────────────────┐│
-│                                 │  Mongo Express   ││
-│                                 │  :8081           ││
-│                                 └──────────────────┘│
-└─────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────┐
+│                    Docker Compose                        │
+│                                                         │
+│  ┌───────────┐   ┌──────────────┐   ┌────────────────┐  │
+│  │    n8n    │───│  n8n-runner  │   │    MongoDB     │  │
+│  │  :5678    │   │  (Python/JS) │   │    :27017      │  │
+│  └───────────┘   └──────────────┘   └────────────────┘  │
+│                                      ┌────────────────┐  │
+│                                      │ Mongo Express  │  │
+│                                      │    :8081       │  │
+│                                      └────────────────┘  │
+└─────────────────────────────────────────────────────────┘
 
-┌─────────────────────────────────────────────────────┐
-│  Frontend React (:5173)                             │
-└─────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────┐
+│                 Frontend React  :5173                    │
+└─────────────────────────────────────────────────────────┘
 ```
 
-### Struttura delle Cartelle
+| Servizio | Tecnologia | Ruolo |
+|----------|------------|-------|
+| **n8n** | n8nio/n8n | Orchestratore dei workflow. Espone l'interfaccia visuale sulla porta 5678 e un broker interno sulla porta 5679 per la comunicazione con il Task Runner. |
+| **n8n-runner** | n8nio/runners | Ambiente di esecuzione isolato per il codice Python e JavaScript definito nei nodi Code di n8n. Le policy di sicurezza (moduli consentiti) sono gestite tramite un file JSON dedicato, montato in sola lettura. |
+| **MongoDB** | mongo | Database NoSQL per la persistenza dei dati applicativi. I dati risiedono su un volume Docker e sopravvivono al riavvio dei container. |
+| **Mongo Express** | mongo-express | Interfaccia web di amministrazione del database, accessibile sulla porta 8081. Utile in fase di sviluppo e debug. |
+| **Frontend** | React + Vite | Interfaccia utente. Gira in locale sulla porta 5173 durante lo sviluppo. |
+
+### Struttura del repository
 
 ```text
 bando-ai-project/
-├── docker-compose.yml          # Infrastruttura (n8n, MongoDB, runner)
-├── n8n-task-runners.json       # Policy di sicurezza del runner Python
-├── frontend/                   # App React (UI)
+├── docker-compose.yml            # Definizione dell'infrastruttura
+├── n8n-task-runners.json         # Policy di esecuzione del Task Runner
+├── frontend/                     # Applicazione React
 │   ├── src/
 │   ├── package.json
 │   └── ...
-├── .env.example                # Template per le password
-├── .gitignore                  # File e cartelle esclusi da Git
-└── README.md                   # Questo documento
+├── .env.example                  # Template delle variabili d'ambiente
+├── .gitignore
+└── README.md
 ```
 
 ---
 
-## 📚 Guida al Setup (Per il Team)
+## Requisiti
 
-Questa sezione è una guida passo-passo pensata per farti configurare e avviare il progetto sul tuo computer nel minor tempo possibile e senza errori.
+Prima di procedere, verificare di avere installato:
 
-### 🛑 Prerequisiti: Cosa devi avere installato PRIMA di iniziare
+- **Git** — [download](https://git-scm.com/downloads)
+- **Docker Desktop** — [download](https://www.docker.com/products/docker-desktop/) (deve essere in esecuzione)
+- **Node.js v18+** (LTS) — [download](https://nodejs.org/)
 
-Se non hai questi programmi installati, il progetto non funzionerà. Assicurati di averli:
+---
 
-1. **[Git](https://git-scm.com/downloads)**: Per scaricare il codice e gestire le versioni.
-2. **[Docker Desktop](https://www.docker.com/products/docker-desktop/)**: Deve essere installato e **avviato** (l'icona della balena deve essere visibile e attiva nel tuo sistema).
-3. **[Node.js](https://nodejs.org/it/download/)**: Scarica la versione "LTS" (raccomandata). Serve per avviare il frontend.
+## Installazione
 
-### Step 1: Scarica il codice
-Apri il terminale (o il Prompt dei comandi su Windows) e lancia:
+### 1. Clonare il repository
+
 ```bash
 git clone https://github.com/fede0303/bando-ai-project.git
 cd bando-ai-project
 ```
 
-### Step 2: Configura le password e le chiavi segrete
-Per motivi di sicurezza, le password non sono salvate su GitHub. Abbiamo preparato un file di esempio chiamato `.env.example`.
+### 2. Configurare le variabili d'ambiente
 
-1. Trova il file `.env.example` nella cartella principale del progetto.
-2. **Copia** quel file e rinominalo in `.env` (assicurati che ci sia il punto all'inizio e non ci siano estensioni nascoste).
-   *Da terminale puoi fare:* `cp .env.example .env` (su Mac/Linux)
-3. Apri il file `.env` che hai appena creato con un editor di testo e compila le variabili inserendo le password concordate con il team.
-4. **Salva il file**. Git ignorerà automaticamente questo file, quindi i tuoi segreti sono al sicuro.
+Le credenziali di accesso ai servizi non sono versionate per ragioni di sicurezza. Il repository include un file template (`.env.example`) che va duplicato e compilato con i valori concordati internamente.
 
-### Step 3: Avvia il Backend (Docker)
-Assicurati che Docker Desktop sia aperto e funzionante, poi dal terminale, nella cartella principale (`bando-ai-project`), scrivi:
+```bash
+cp .env.example .env
+```
+
+Aprire il file `.env` appena creato e inserire i valori reali per ciascuna variabile. Il file è già presente nel `.gitignore` e non verrà mai incluso nei commit.
+
+Le variabili richieste sono:
+
+| Variabile | Descrizione |
+|-----------|-------------|
+| `N8N_RUNNERS_AUTH_TOKEN` | Token di autenticazione condiviso tra il server n8n e il Task Runner. Può essere una stringa alfanumerica a scelta. |
+| `MONGO_ROOT_USERNAME` | Nome utente dell'amministratore MongoDB. |
+| `MONGO_ROOT_PASSWORD` | Password dell'amministratore MongoDB. |
+| `ME_BASICAUTH_USERNAME` | Nome utente per l'accesso a Mongo Express. |
+| `ME_BASICAUTH_PASSWORD` | Password per l'accesso a Mongo Express. |
+
+### 3. Avviare l'infrastruttura
+
+Assicurarsi che Docker Desktop sia in esecuzione, quindi lanciare:
+
 ```bash
 docker compose up -d
 ```
-*Cosa fa questo comando?* Scarica tutto il necessario, crea il database e avvia l'orchestratore n8n. La prima volta potrebbe impiegare qualche minuto. Il `-d` significa che continuerà a girare in background in modo da lasciarti usare il terminale.
 
-### Step 4: Avvia il Frontend (React)
-Ora dobbiamo accendere l'interfaccia grafica. Spostati nella cartella del frontend e installa le librerie necessarie:
+Al primo avvio il download delle immagini potrebbe richiedere alcuni minuti. Il flag `-d` esegue i container in background.
+
+### 4. Avviare il frontend
+
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
-*Cosa fa questo comando?* `npm install` scarica tutte le dipendenze di React (va fatto solo la prima volta o se cambiano). `npm run dev` avvia il sito web.
 
-🎉 **Finito! Il progetto è ora in esecuzione.**
-
----
-
-## 🌐 Dove trovo i servizi avviati?
-
-Una volta avviato tutto, puoi aprire il tuo browser e visitare questi link:
-
-| Cosa cerchi? | Dove cliccare / URL | Credenziali di accesso |
-|---|---|---|
-| **L'App Web Frontend** | [http://localhost:5173](http://localhost:5173) | Nessuna per ora |
-| **Pannello di n8n (Workflow)** | [http://localhost:5678](http://localhost:5678) | Se richieste, vedi config n8n |
-| **Pannello Database (Mongo Express)** | [http://localhost:8081](http://localhost:8081) | Utente: `admin` / Password: *(vedi file .env)* |
+`npm install` è necessario solo al primo avvio o quando vengono aggiornate le dipendenze.
 
 ---
 
-## ⏸️ Come spegnere il progetto a fine giornata
+## Accesso ai servizi
 
-Per non sprecare risorse del tuo computer, quando finisci di lavorare spegni tutto:
+Una volta completata l'installazione:
 
-1. **Spegni il frontend**: Vai nel terminale dove hai lanciato `npm run dev` e premi `Ctrl + C`.
-2. **Spegni Docker**: Torna nella cartella principale del progetto (`cd ..`) e scrivi:
-   ```bash
-   docker compose down
-   ```
-   *(Tranquillo, i dati salvati nel database non andranno persi, sono al sicuro in un volume dedicato!)*
-
----
-
-## 🤝 Regole per lavorare in Team (Flusso Git)
-
-Per evitare di sovrascriverci il lavoro a vicenda o rompere l'applicazione principale, usiamo questo semplice metodo:
-
-1. **Mai lavorare sul ramo `main`**: Prima di iniziare a modificare qualcosa, scarica gli ultimi aggiornamenti e crea un tuo ramo di lavoro:
-   ```bash
-   git checkout main
-   git pull
-   git checkout -b nome-del-tuo-ramo
-   # (es: git checkout -b fix-bottone-login)
-   ```
-
-2. **Salva il tuo lavoro regolarmente**:
-   ```bash
-   git add .
-   git commit -m "Descrivi in modo chiaro cosa hai modificato"
-   ```
-
-3. **Invia il tuo lavoro su GitHub**:
-   ```bash
-   git push origin nome-del-tuo-ramo
-   ```
-
-4. **Chiedi di unire le modifiche**: Vai su GitHub e apri una "Pull Request" (PR). Qualcun altro del team la controllerà e la unirà al ramo `main`.
+| Servizio | URL | Note |
+|----------|-----|------|
+| Frontend | http://localhost:5173 | Interfaccia utente |
+| n8n | http://localhost:5678 | Editor dei workflow |
+| Mongo Express | http://localhost:8081 | Credenziali: vedi file `.env` |
 
 ---
 
-## ⚠️ Regole D'Oro (da non infrangere mai)
+## Spegnimento
 
-* 🔴 **MAI E POI MAI** inviare il file `.env` su GitHub. Se lo fai, le password del database diventano pubbliche. (Il file `.gitignore` dovrebbe già proteggerti, ma fai sempre attenzione).
-* 🔴 Se modifichi il file `docker-compose.yml`, avvisa il team! Affinché le modifiche abbiano effetto, dovrai eseguire di nuovo `docker compose down` e poi `docker compose up -d`.
-* 🔴 I permessi di quali moduli Python il server può eseguire sono decisi nel file `n8n-task-runners.json`. Non aggiungere librerie a caso in quel file senza consultare il team, per questioni di sicurezza.
+Per terminare l'esecuzione dei servizi:
+
+1. Arrestare il frontend con `Ctrl + C` nel terminale in cui è attivo.
+2. Arrestare i container Docker dalla cartella principale del progetto:
+
+```bash
+docker compose down
+```
+
+I dati del database sono persistenti e non vengono persi allo spegnimento.
+
+---
+
+## Collaborazione
+
+### Flusso di lavoro Git
+
+Il ramo `main` è protetto: non va mai modificato direttamente. Per ogni intervento — nuova funzionalità, correzione, modifica infrastrutturale — si opera su un ramo dedicato.
+
+```bash
+# Aggiornare il ramo principale
+git checkout main
+git pull
+
+# Creare un ramo di lavoro
+git checkout -b feature/descrizione-intervento
+```
+
+Al termine del lavoro, salvare e inviare le modifiche:
+
+```bash
+git add .
+git commit -m "Descrizione sintetica dell'intervento"
+git push origin feature/descrizione-intervento
+```
+
+Su GitHub, aprire una **Pull Request** verso `main`. Il merge avviene dopo la revisione da parte di almeno un altro membro del team.
+
+### Aggiornamento dell'infrastruttura Docker
+
+Se dopo un `git pull` risultano modifiche al file `docker-compose.yml` o al file `.env`, è necessario riavviare i container affinché le nuove configurazioni vengano applicate:
+
+```bash
+docker compose up -d
+```
+
+Docker riconosce automaticamente quali container necessitano di essere ricreati e lascia invariati quelli non interessati dalle modifiche.
+
+---
+
+## Note sulla sicurezza
+
+- **Il file `.env` non deve mai essere incluso in un commit.** Contiene le credenziali di accesso ai servizi. Il `.gitignore` ne impedisce il tracciamento, ma è responsabilità di ciascun collaboratore verificare che non venga aggiunto manualmente.
+
+- **Le policy di esecuzione del codice Python** sono definite nel file `n8n-task-runners.json`, che viene montato in sola lettura nel container del Task Runner. L'architettura di n8n prevede che queste policy vengano lette esclusivamente da file e non da variabili d'ambiente, in modo da garantire un confine di sicurezza indipendente dal container. Qualsiasi modifica a questo file (ad esempio l'aggiunta di moduli nella allowlist) va concordata con il team.
+
+- **Il `docker-compose.yml` non contiene credenziali in chiaro.** Tutti i valori sensibili sono referenziati tramite variabili d'ambiente (`${VARIABILE}`) e risolti a runtime dal file `.env` locale.
+
+---
+
+## Tecnologie utilizzate
+
+| Componente | Tecnologia | Versione |
+|------------|------------|----------|
+| Orchestrazione workflow | [n8n](https://n8n.io/) | latest |
+| Task Runner | [n8n runners](https://docs.n8n.io/hosting/configuration/task-runners/) | latest |
+| Database | [MongoDB](https://www.mongodb.com/) | latest |
+| Admin DB | [Mongo Express](https://github.com/mongo-express/mongo-express) | latest |
+| Frontend | [React](https://react.dev/) + [Vite](https://vitejs.dev/) | — |
+| Containerizzazione | [Docker Compose](https://docs.docker.com/compose/) | v2 |
