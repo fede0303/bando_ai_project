@@ -1,0 +1,150 @@
+# =============================================================================
+# Docker Compose - Infrastruttura Progetto Bando AI
+# =============================================================================
+#
+# Architettura a 4 servizi:
+#   1. n8n           → Orchestratore workflow (UI + Broker per i task runner)
+#   2. n8n-runner    → Motore di esecuzione codice Python/JS (sandbox isolata)
+#   3. mongodb       → Database NoSQL per la persistenza dei dati
+#   4. mongo-express → Interfaccia web di amministrazione MongoDB
+#
+# Tutti i servizi comunicano tramite la rete interna "bando-network".
+# =============================================================================
+
+services:
+
+  # ---------------------------------------------------------------------------
+  # 1. SERVER n8n - Orchestratore Workflow
+  # ---------------------------------------------------------------------------
+  # Ruolo: gestisce l'interfaccia utente, la logica dei workflow e coordina
+  # l'esecuzione del codice delegandola al Task Runner esterno (n8n-runner).
+  #
+  # Porte esposte:
+  #   - 5678: UI web di n8n (accessibile dal browser)
+  #   - 5679: Broker interno per la comunicazione con il Task Runner
+  # ---------------------------------------------------------------------------
+  n8n:
+    image: n8nio/n8n:latest
+    restart: always
+    ports:
+      - "5678:5678"   # Interfaccia web n8n
+      - "5679:5679"   # Porta broker per comunicazione con il Task Runner
+    environment:
+      - N8N_HOST=localhost
+      - NODE_ENV=production
+      - N8N_SECURE_COOKIE=false                                     # Necessario per accesso HTTP locale (non HTTPS)
+      - N8N_RUNNERS_ENABLED=true                                    # Abilita il sistema Task Runner
+      - N8N_RUNNERS_MODE=external                                   # Modalità esterna: il runner gira in un container separato
+      - N8N_RUNNERS_AUTH_TOKEN=bando_ai_project_secret_token_2026   # Token di autenticazione condiviso con il runner
+      - N8N_RUNNERS_BROKER_LISTEN_ADDRESS=0.0.0.0                   # Il broker accetta connessioni da qualsiasi interfaccia di rete
+      # NOTA: Le policy di sicurezza per Python (moduli stdlib consentiti)
+      # sono gestite nel file n8n-task-runners.json, montato nel container
+      # del runner. Vedi il servizio n8n-runner per dettagli.
+    volumes:
+      - ~/.n8n:/home/node/.n8n   # Persistenza dati n8n (workflow, credenziali, settings)
+    networks:
+      - bando-network
+
+  # ---------------------------------------------------------------------------
+  # 2. TASK RUNNER n8n - Motore di Esecuzione Codice
+  # ---------------------------------------------------------------------------
+  # Ruolo: esegue il codice Python e JavaScript dei nodi "Code" di n8n
+  # all'interno di una sandbox isolata.
+  #
+  # Sicurezza:
+  #   Il runner utilizza un "Launcher" interno che legge le policy di
+  #   esecuzione ESCLUSIVAMENTE dal file /etc/n8n-task-runners.json.
+  #   Questo crea un boundary di sicurezza separato dal container Docker:
+  #   anche in caso di compromissione dell'ambiente container, le policy
+  #   di allowlisting dei moduli rimangono inalterate.
+  #
+  #   Per questo motivo le autorizzazioni Python NON possono essere
+  #   configurate tramite variabili d'ambiente nel docker-compose,
+  #   ma devono essere definite nel file JSON dedicato.
+  #
+  # Riferimento: https://docs.n8n.io/hosting/configuration/task-runners/
+  # ---------------------------------------------------------------------------
+  n8n-runner:
+    image: n8nio/runners:latest
+    restart: always
+    environment:
+      - N8N_RUNNERS_AUTH_TOKEN=bando_ai_project_secret_token_2026   # Deve corrispondere al token del server n8n
+      - N8N_RUNNERS_TASK_BROKER_URI=http://n8n:5679                 # URI del broker n8n (usa il nome del servizio Docker)
+    volumes:
+      # Policy di sicurezza per l'esecuzione del codice Python/JS.
+      # Questo file definisce quali moduli stdlib e pacchetti esterni
+      # sono autorizzati nei nodi Code di n8n.
+      # Montato in sola lettura (:ro) per impedire modifiche a runtime.
+      - ./n8n-task-runners.json:/etc/n8n-task-runners.json:ro
+    depends_on:
+      - n8n   # Il runner si avvia solo dopo che il server n8n è pronto
+    networks:
+      - bando-network
+
+  # ---------------------------------------------------------------------------
+  # 3. MongoDB - Database NoSQL
+  # ---------------------------------------------------------------------------
+  # Ruolo: database principale per la persistenza dei dati del progetto.
+  # I dati vengono salvati in un volume Docker per garantire la persistenza
+  # anche in caso di riavvio o ricostruzione del container.
+  # ---------------------------------------------------------------------------
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb
+    restart: always
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin          # Utente amministratore del database
+      - MONGO_INITDB_ROOT_PASSWORD=supersegreta   # Password dell'amministratore (da cambiare in produzione)
+    ports:
+      - "27017:27017"   # Porta standard MongoDB
+    volumes:
+      - mongo_data:/data/db   # Volume persistente per i dati del database
+    networks:
+      - bando-network
+
+  # ---------------------------------------------------------------------------
+  # 4. Mongo Express - Interfaccia Web di Amministrazione
+  # ---------------------------------------------------------------------------
+  # Ruolo: fornisce un'interfaccia web per visualizzare e gestire i dati
+  # all'interno di MongoDB. Utile per debug e ispezione durante lo sviluppo.
+  #
+  # Accessibile su: http://localhost:8081
+  # Credenziali di accesso: admin / pass
+  # ---------------------------------------------------------------------------
+  mongo-express:
+    image: mongo-express:latest
+    container_name: mongo-express
+    restart: always
+    ports:
+      - "8081:8081"   # Interfaccia web Mongo Express
+    environment:
+      - ME_CONFIG_MONGODB_SERVER=mongodb                # Nome del servizio MongoDB nella rete Docker
+      - ME_CONFIG_MONGODB_PORT=27017                    # Porta di connessione a MongoDB
+      - ME_CONFIG_MONGODB_ADMINUSERNAME=admin            # Credenziali MongoDB (devono corrispondere a quelle sopra)
+      - ME_CONFIG_MONGODB_ADMINPASSWORD=supersegreta
+      - ME_CONFIG_BASICAUTH_USERNAME=admin               # Credenziali di accesso all'interfaccia web
+      - ME_CONFIG_BASICAUTH_PASSWORD=pass
+    depends_on:
+      - mongodb   # Mongo Express si avvia solo dopo MongoDB
+    networks:
+      - bando-network
+
+# =============================================================================
+# RETE - Comunicazione interna tra i servizi
+# =============================================================================
+# Tutti i servizi sono collegati alla stessa rete bridge "bando-network".
+# Questo permette la comunicazione interna tramite i nomi dei servizi
+# (es. "mongodb", "n8n") senza esporre porte aggiuntive all'esterno.
+# =============================================================================
+networks:
+  bando-network:
+    driver: bridge
+
+# =============================================================================
+# VOLUMI - Persistenza dei dati
+# =============================================================================
+# mongo_data: volume Docker per i dati di MongoDB.
+# Garantisce che i dati sopravvivano al riavvio dei container.
+# =============================================================================
+volumes:
+  mongo_data:
