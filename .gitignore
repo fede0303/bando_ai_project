@@ -15,6 +15,7 @@ frontend/build/
 .env
 .env.local
 .env.production
+frontend/.env
 
 # --- Dati locali Docker (non vanno nel repo) ---
 mongo_data/

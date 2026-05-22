@@ -13,8 +13,10 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 
 // ───────────────────────────────────────────────
 // COSTANTE: URL del webhook n8n
+// Configurabile tramite variabile d'ambiente
+// (vedi frontend/.env)
 // ───────────────────────────────────────────────
-const WEBHOOK_URL = 'http://localhost:5678/webhook-test/pdf-upload';
+const WEBHOOK_URL = import.meta.env.VITE_API_URL;
 
 // ── Limiti di sicurezza ──
 const MAX_FILE_SIZE_MB = 30; // Dimensione massima del file in MB
