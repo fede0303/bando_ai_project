@@ -42,7 +42,7 @@ function calcolaBadge(scadenzaISO, priorita) {
     return { label: 'Priorità Media', dot: 'bg-amber-500', bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-300' };
   }
   if (p === 'bassa') {
-    return { label: 'Priorità Bassa', dot: 'bg-emerald-500', bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-300' };
+    return { label: 'Priorità Bassa', dot: 'bg-blue-500', bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-300' };
   }
 
   return null;
