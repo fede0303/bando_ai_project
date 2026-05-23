@@ -8,19 +8,27 @@ import { useState, useRef, useCallback } from 'react';
 
 export default function DropZone({ onFileSelected }) {
   const [isDragOver, setIsDragOver] = useState(false);
-  const [fileError, setFileError] = useState(false);
+  const [fileError, setFileError] = useState('');
   const fileInputRef = useRef(null);
 
-  // ── Validazione: accetta solo PDF ──
+  // ── Costanti di validazione ──
+  const MAX_FILE_SIZE_MB = 20;
+  const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
   const isPdf = (file) => file && file.name.toLowerCase().endsWith('.pdf');
 
   // ── Gestione del file selezionato ──
   const handleFile = useCallback(
     (file) => {
-      setFileError(false);
+      setFileError('');
 
       if (!isPdf(file)) {
-        setFileError(true);
+        setFileError('Formato non valido. Carica esclusivamente file .pdf.');
+        return;
+      }
+
+      if (file.size > MAX_FILE_SIZE_BYTES) {
+        const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
+        setFileError(`Il file è troppo grande (${sizeMB} MB). Il limite massimo consentito è di ${MAX_FILE_SIZE_MB} MB.`);
         return;
       }
 
@@ -57,6 +65,7 @@ export default function DropZone({ onFileSelected }) {
   const handleInputChange = (e) => {
     if (e.target.files.length) {
       handleFile(e.target.files[0]);
+      e.target.value = ''; // Permette di riselezionare lo stesso file
     }
   };
 
@@ -67,34 +76,43 @@ export default function DropZone({ onFileSelected }) {
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
-        className={`drop-zone border-2 border-dashed border-gray-300 rounded-2xl bg-white p-12 text-center cursor-pointer hover:border-poli-500 hover:bg-poli-50 shadow-sm ${
+        className={`drop-zone group border-2 border-dashed border-gray-300/80 rounded-3xl bg-white/85 backdrop-blur-md p-10 md:p-14 text-center cursor-pointer hover:border-poli-500 hover:bg-poli-50/40 hover:shadow-xl hover:shadow-poli-500/5 hover:-translate-y-0.5 shadow-md transition-all duration-300 ${
           isDragOver ? 'drag-over' : ''
         }`}
       >
         {/* Icona upload */}
-        <svg
-          className="mx-auto w-16 h-16 text-poli-500 mb-4"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth="1.5"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M12 16V4m0 0l-4 4m4-4l4 4M4 20h16"
-          />
-        </svg>
-        <p className="text-lg font-semibold text-gray-700">
+        <div className="mx-auto w-16 h-16 rounded-2xl bg-poli-50/80 border border-poli-100/80 flex items-center justify-center text-poli-500 mb-5 group-hover:scale-105 group-hover:bg-poli-100/50 transition-all duration-300 shadow-inner">
+          <svg
+            className="w-7 h-7"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+            />
+          </svg>
+        </div>
+        
+        <p className="text-lg font-bold text-gray-800 tracking-tight">
           Trascina qui il tuo bando in formato PDF
         </p>
-        <p className="text-sm text-gray-400 mt-2">
+        <p className="text-sm text-gray-400 mt-2 font-medium">
           oppure{' '}
-          <span className="text-poli-600 underline">clicca per selezionare</span>
+          <span className="text-poli-600 underline font-semibold decoration-2 underline-offset-2 hover:text-poli-700 transition-colors">
+            clicca per selezionare
+          </span>
         </p>
-        <p className="text-xs text-gray-400 mt-4">
-          Sono accettati solo file <strong>.pdf</strong>
-        </p>
+        
+        <div className="mt-6 pt-5 border-t border-gray-100 flex items-center justify-center gap-2 text-xs text-gray-400/80 font-medium">
+          <svg className="w-4 h-4 text-poli-500/80" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          <span>Solo file PDF (dimensione max 20MB)</span>
+        </div>
 
         {/* Input file nascosto */}
         <input
@@ -106,10 +124,11 @@ export default function DropZone({ onFileSelected }) {
         />
       </div>
 
-      {/* Alert errore formato file */}
+      {/* Alert errore formato o dimensione file */}
       {fileError && (
-        <div className="mt-4 bg-red-50 border border-red-300 text-red-700 rounded-lg px-4 py-3 text-sm font-medium text-center">
-          ⚠️ Formato non valido. Carica esclusivamente file <strong>.pdf</strong>.
+        <div className="mt-4 bg-red-50/90 border border-red-200 text-red-700 rounded-2xl px-5 py-3.5 text-sm font-semibold text-center flex items-center justify-center gap-2 shadow-sm">
+          <span>⚠️</span>
+          <span>{fileError}</span>
         </div>
       )}
     </section>
