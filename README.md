@@ -6,6 +6,8 @@ Sistema di automazione per la gestione e l'analisi di documenti PDF, costruito s
 
 Il progetto nasce dall'esigenza di automatizzare l'analisi documentale nell'ambito dei bandi pubblici. L'infrastruttura si compone di quattro servizi containerizzati che collaborano tramite una rete Docker interna, affiancati da un'applicazione frontend indipendente.
 
+Il frontend è configurato specificamente per il monitoraggio e l'estrazione dei bandi ufficiali del **Dipartimento Dicatech** (Dipartimento di Ingegneria Civile, Ambientale, del Territorio, Edile e di Chimica) del Politecnico, supportando il caricamento e la validazione di documenti PDF con una dimensione massima di **20 MB**.
+
 ### Architettura
 
 ```text
