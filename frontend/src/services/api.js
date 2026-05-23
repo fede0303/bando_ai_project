@@ -19,7 +19,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 const WEBHOOK_URL = import.meta.env.VITE_API_URL;
 
 // ── Limiti di sicurezza ──
-const MAX_FILE_SIZE_MB = 30; // Dimensione massima del file in MB
+const MAX_FILE_SIZE_MB = 20; // Dimensione massima del file in MB
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 const FETCH_TIMEOUT_MS = 120_000; // Timeout fetch: 2 minuti (per latenza LLM)
 
@@ -186,6 +186,14 @@ export async function inviaAlBackend(file) {
         'Il workflow n8n potrebbe essere bloccato o il PDF troppo complesso.'
       );
     }
+
+    // ── Gestione errore di connessione/rete (es. Failed to fetch, Load failed in Safari) ──
+    if (err instanceof TypeError || err.message?.includes('fetch') || err.message?.includes('Load failed')) {
+      throw new Error(
+        'Impossibile connettersi al server. Verifica che la tua connessione internet sia attiva e che il backend n8n sia raggiungibile.'
+      );
+    }
+
     throw err;
   }
 }
