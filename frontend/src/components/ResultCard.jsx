@@ -100,7 +100,7 @@ export default function ResultCard({ data, onReset }) {
           {/* Subtle design element */}
           <div className="absolute right-0 top-0 translate-x-8 -translate-y-8 w-32 h-32 rounded-full bg-white/5 blur-xl pointer-events-none" />
           
-          <p className="text-poli-300 text-[10px] uppercase tracking-widest font-bold mb-1.5">
+          <p className="text-poli-200 text-[10px] uppercase tracking-widest font-bold mb-1.5">
             Analisi Completata — Titolo Documento
           </p>
           <h2 className="text-xl md:text-2xl font-extrabold text-white leading-snug drop-shadow-sm">{titolo}</h2>
