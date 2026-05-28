@@ -167,7 +167,7 @@ export async function inviaAlBackend(file) {
     }
 
     // ── Validazione finale ──
-    if (!data || (!data.titolo && !data.scadenza && !data.requisiti)) {
+    if (!data || (!data.titolo && !data.scadenza && !data.ScadenzaISO && !data.requisiti)) {
       throw new Error(
         'Il server ha risposto, ma i campi titolo/scadenza/requisiti ' +
         'non sono presenti. Risposta ricevuta: ' +

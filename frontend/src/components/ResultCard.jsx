@@ -50,7 +50,40 @@ function calcolaBadge(scadenzaISO, priorita) {
 
 export default function ResultCard({ data, onReset }) {
   const titolo = data.titolo || 'Titolo non disponibile';
-  const scadenza = data.scadenza || 'Data non specificata';
+  
+  // Determina e formatta la data di scadenza
+  const scadenzaRaw = data.ScadenzaISO || data.scadenza;
+  let scadenza = 'Data non specificata';
+  
+  if (scadenzaRaw) {
+    const d = new Date(scadenzaRaw);
+    if (!isNaN(d.getTime())) {
+      // Gestisce il parsing corretto per date semplici YYYY-MM-DD senza timezone shift
+      const matchSoloData = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(scadenzaRaw).trim());
+      if (matchSoloData) {
+        const year = parseInt(matchSoloData[1], 10);
+        const month = parseInt(matchSoloData[2], 10) - 1;
+        const day = parseInt(matchSoloData[3], 10);
+        const localDate = new Date(year, month, day);
+        scadenza = localDate.toLocaleDateString('it-IT', {
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric'
+        });
+      } else {
+        const haOra = String(scadenzaRaw).includes('T') || String(scadenzaRaw).includes(':');
+        scadenza = d.toLocaleString('it-IT', {
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric',
+          ...(haOra ? { hour: '2-digit', minute: '2-digit' } : {})
+        });
+      }
+    } else {
+      scadenza = scadenzaRaw;
+    }
+  }
+
   const requisiti = normalizzaRequisiti(data.requisiti);
 
   // ── Badge dinamico priorità / scadenza ──
