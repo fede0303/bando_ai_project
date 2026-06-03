@@ -160,10 +160,10 @@ export async function inviaAlBackend(file) {
 
     // ── Se i dati sono dentro un campo "output" o "json" ──
     if (data.output && typeof data.output === 'object') {
-      data = data.output;
+      data = { ...data, ...data.output };
     }
     if (data.json && typeof data.json === 'object') {
-      data = data.json;
+      data = { ...data, ...data.json };
     }
 
     // ── Validazione finale ──
