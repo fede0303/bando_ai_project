@@ -65,7 +65,10 @@ services:
   # Riferimento: https://docs.n8n.io/hosting/configuration/task-runners/
   # ---------------------------------------------------------------------------
   n8n-runner:
-    image: n8nio/runners:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.runner
+    image: custom-n8n-runner:latest
     restart: always
     environment:
       - N8N_RUNNERS_AUTH_TOKEN=${N8N_RUNNERS_AUTH_TOKEN}   # Deve corrispondere al token del server n8n

@@ -56,8 +56,8 @@
 				"DEPLOYMENT_NAME"
 			],
 			"env-overrides": {
-				"N8N_RUNNERS_STDLIB_ALLOW": "re,json,datetime",
-				"N8N_RUNNERS_EXTERNAL_ALLOW": ""
+				"N8N_RUNNERS_STDLIB_ALLOW": "re,json,datetime,io,base64,hashlib",
+				"N8N_RUNNERS_EXTERNAL_ALLOW": "pdfplumber"
 			}
 		}
 	]

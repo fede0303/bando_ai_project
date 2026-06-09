@@ -1,0 +1,11 @@
+# Usa l'immagine ufficiale del task runner n8n come base
+FROM n8nio/runners:latest
+
+# Cambia l'utente a root per avere i permessi necessari all'installazione
+USER root
+
+# Attiva l'ambiente virtuale Python interno del runner e installa pdfplumber
+RUN uv pip install --python /opt/runners/task-runner-python/.venv pdfplumber
+
+# Ripristina l'utente runner per motivi di sicurezza
+USER runner
