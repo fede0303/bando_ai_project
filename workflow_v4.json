@@ -447,10 +447,10 @@
         "returnAll": false,
         "limit": 5,
         "additionalFields": {
-          "timeMin": "={{ $('Prepara Aggiornamento').item.json.giorno_inizio }}",
-          "timeMax": "={{ $('Prepara Aggiornamento').item.json.giorno_fine }}",
+          "timeMin": "={{ $json.giorno_inizio }}",
+          "timeMax": "={{ $json.giorno_fine }}",
           "singleEvents": true,
-          "query": "=SCADENZA: {{ $('Prepara Aggiornamento').item.json.titolo.substring(0, 40) }}"
+          "query": "=SCADENZA: {{ $json.titolo.substring(0, 40) }}"
         }
       },
       "id": "f6a7b8c9-6666-6666-6666-666666666666",
@@ -479,7 +479,7 @@
         },
         "eventId": "={{ $json.id }}",
         "updateFields": {
-          "color": "={{ $('Prepara Aggiornamento').item.json.colore_calendar }}"
+          "color": "={{ $('Ripristina Dati per Notifiche').first().json.colore_calendar }}"
         }
       },
       "id": "a7b8c9d0-7777-7777-7777-777777777777",
@@ -500,8 +500,8 @@
     {
       "parameters": {
         "sendTo": "testdigitalbusiness1@gmail.com",
-        "subject": "=\ud83d\udd04 Cambio Priorit\u00e0 Bando: {{ $('Prepara Aggiornamento').item.json.titolo }}",
-        "message": "=<p>Ciao Team,</p>\n\n<p>Il sistema di monitoraggio ha aggiornato automaticamente la priorit\u00e0 di un bando nel database.</p>\n\n<h3>&#x1F504; Cambio di Priorit\u00e0 Rilevato:</h3>\n<ul>\n  <li><b>Titolo:</b> {{ $('Prepara Aggiornamento').item.json.titolo }}</li>\n  <li><b>Scadenza:</b> {{ $('Prepara Aggiornamento').item.json.ScadenzaISO.split('T')[0].split('-').reverse().join('/') }}</li>\n  <li><b>Priorit\u00e0 Precedente:</b> {{ $('Prepara Aggiornamento').item.json.priorita_vecchia }}</li>\n  <li><b>Nuova Priorit\u00e0:</b> <span style=\"color: {{ $('Prepara Aggiornamento').item.json.priorita_nuova == 'Scaduto' ? '#757575' : ($('Prepara Aggiornamento').item.json.priorita_nuova == 'Alta' ? '#d93025' : ($('Prepara Aggiornamento').item.json.priorita_nuova == 'Media' ? '#ef6c00' : '#1a73e8')) }};\"><b>{{ $('Prepara Aggiornamento').item.json.priorita_nuova }}</b></span></li>\n</ul>\n\n<p><i>Aggiornamento automatico eseguito dal workflow n8n ad ogni attivazione.</i></p>\n<hr>",
+        "subject": "=\ud83d\udd04 Cambio Priorit\u00e0 Bando: {{ $json.titolo }}",
+        "message": "=<p>Ciao Team,</p>\n\n<p>Il sistema di monitoraggio ha aggiornato automaticamente la priorit\u00e0 di un bando nel database.</p>\n\n<h3>&#x1F504; Cambio di Priorit\u00e0 Rilevato:</h3>\n<ul>\n  <li><b>Titolo:</b> {{ $json.titolo }}</li>\n  <li><b>Scadenza:</b> {{ $json.ScadenzaISO.split('T')[0].split('-').reverse().join('/') }}</li>\n  <li><b>Priorit\u00e0 Precedente:</b> {{ $json.priorita_vecchia }}</li>\n  <li><b>Nuova Priorit\u00e0:</b> <span style=\"color: {{ $json.priorita_nuova == 'Scaduto' ? '#757575' : ($json.priorita_nuova == 'Alta' ? '#d93025' : ($json.priorita_nuova == 'Media' ? '#ef6c00' : '#1a73e8')) }};\"><b>{{ $json.priorita_nuova }}</b></span></li>\n</ul>\n\n<p><i>Aggiornamento automatico eseguito dal workflow n8n ad ogni attivazione.</i></p>\n<hr>",
         "options": {}
       },
       "id": "b8c9d0e1-8888-8888-8888-888888888888",
