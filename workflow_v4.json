@@ -518,6 +518,19 @@
           "name": "Gmail account"
         }
       }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Il nodo MongoDB Update non restituisce i dati originali in output.\n// Questo nodo recupera i dati da 'Prepara Aggiornamento' e li passa\n// ai nodi Calendar e Gmail, che ne hanno bisogno per funzionare.\nreturn $('Prepara Aggiornamento').all().map(item => ({ json: item.json }));\n"
+      },
+      "id": "cc1dd2ee-9999-9999-9999-999999999999",
+      "name": "Ripristina Dati per Notifiche",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1312,
+        2640
+      ]
     }
   ],
   "pinData": {},
@@ -717,12 +730,7 @@
       "main": [
         [
           {
-            "node": "Cerca Evento Calendario",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "Email Notifica Cambio Priorit\u00e0",
+            "node": "Ripristina Dati per Notifiche",
             "type": "main",
             "index": 0
           }
@@ -734,6 +742,22 @@
         [
           {
             "node": "Aggiorna Colore Evento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ripristina Dati per Notifiche": {
+      "main": [
+        [
+          {
+            "node": "Cerca Evento Calendario",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Email Notifica Cambio Priorit\u00e0",
             "type": "main",
             "index": 0
           }
