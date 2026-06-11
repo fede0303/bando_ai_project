@@ -51,7 +51,7 @@
     {
       "parameters": {
         "promptType": "define",
-        "text": "=Sei un analista esperto nell'estrazione dati dai bandi pubblici del Politecnico di Bari. Il tuo compito è leggere il documento fornito e compilare uno schema JSON preciso. I documenti possono avere formati e impaginazioni diverse, quindi usa la comprensione del testo, non la posizione fissa delle parole. Segui questi passi:\n\nPASSO 1 – ESTRAZIONE DAL TESTO:\n\n- titolo: Estrai il titolo principale formal del documento prendendolo ESCLUSIVAMENTE dalle primissime righe in cima al testo fornito (i primi 2-3 paragrafi al massimo). Cerca la frase iniziale che definisce l'oggetto o la natura del bando (es. \"BANDO DI SELEZIONE PUBBLICA...\", \"III Avviso di vacanza per il conferimento...\", \"AVVISO DI VACANZA...\"). \nREGOLA TASSATIVA: Non scorrere il documento verso il basso, non guardare assolutamente all'interno del corpo del testo o nelle sezioni successive (come i paragrafi che iniziano con \"EMANA\" o \"ART. 1\"). Non inventare, non parafrasare e non correggere i refusi: copia il titolo iniziale testualmente così come appare in cima. Unisci il testo in un'unica stringa senza ritorni a capo.\n\n- scadenza: Trova la data e l'ora limite per la presentazione delle domande. Potrebbe trovarsi all'inizio del documento (es. \"SCADENZA: 19.12.2025\") oppure essere specificata nel corpo del testo (es. sotto l'Articolo \"Domande e termine\"). Formatala SEMPRE E SOLO così: GG/MM/AAAA ore HH:MM (es. 19/12/2025 ore 12:00).\n\n- requisiti: Cerca l'articolo dedicato ai \"Requisiti di ammissione\" o \"Requisiti di partecipazione\". Estrai SOLO i requisiti obbligatori. Escludi categoricamente i requisiti \"preferenziali\" o i titoli valutabili a punteggio. \nREGOLA TASSATIVA DI PULIZIA: Rimuovi tassativamente la lettera iniziale, il punto, la parentesi o lo spazio che fa da prefisso a ogni requisito (es. la stringa \"a. età non inferiore...\" deve diventare \"età non inferiore...\", la stringa \"b) cittadinanza...\" deve diventare \"cittadinanza...\"). Ogni stringa all'interno del vettore deve iniziare direttamente con il testo del requisito, senza alcun marker alfabetico o numerico. Restituisci un testo pulito e ben formattato.\n\nPASSO 2 – RICERCA NEL DATABASE MONGODB (ANTI-DUPLICATI):\n\nDevi usare il tool MongoDB per verificare se QUESTO ESATTO BANDO esiste già nel database, evitando duplicati se il nome file viene cambiato.\nUserai l'operatore logico $or per cercare un match esatto sull'impronta digitale del file (file_hash) OPPURE un match sul Titolo e Scadenza.\n\nREGOLE PER LA QUERY MONGODB:\nCostruisci esattamente questa query, sostituendo i placeholder tra parentesi quadre:\n{\n  \"$or\": [\n    { \"output.file_hash\": \"{{ $json.file_hash }}\" },\n    {\n      \"output.titolo\": { \"$regex\": \"[PAROLA DISTINTIVA DEL TITOLO (es. COOP4PEDS)]\", \"$options\": \"i\" },\n      \"output.scadenza\": { \"$regex\": \"[DATA GG/MM/AAAA]\", \"$options\": \"i\" }\n    }\n  ]\n}\n\nDopo aver eseguito il tool:\n- Se restituisce almeno 1 documento → gia_presente = true\n- Se restituisce 0 documenti → gia_presente = false\n\nPASSO 3 – OUTPUT FINALE:\nCompila lo schema JSON richiesto, inserendo anche file_hash e metadati_pdf in modo che vengano salvati nel database.\nNon aggiungere commenti fuori dal JSON.\n\nDATI DA ANALIZZARE:\nFile Hash MD5: {{ $json.file_hash }}\nMetadati Nascosti: {{ JSON.stringify($json.metadati_pdf) }}\nTesto Estratto: \n{{ $json.testo_ridotto }}",
+        "text": "=Sei un analista esperto nell'estrazione dati dai bandi pubblici del Politecnico di Bari. Il tuo compito \u00e8 leggere il documento fornito e compilare uno schema JSON preciso. I documenti possono avere formati e impaginazioni diverse, quindi usa la comprensione del testo, non la posizione fissa delle parole. Segui questi passi:\n\nPASSO 1 \u2013 ESTRAZIONE DAL TESTO:\n\n- titolo: Estrai il titolo principale formal del documento prendendolo ESCLUSIVAMENTE dalle primissime righe in cima al testo fornito (i primi 2-3 paragrafi al massimo). Cerca la frase iniziale che definisce l'oggetto o la natura del bando (es. \"BANDO DI SELEZIONE PUBBLICA...\", \"III Avviso di vacanza per il conferimento...\", \"AVVISO DI VACANZA...\"). \nREGOLA TASSATIVA: Non scorrere il documento verso il basso, non guardare assolutamente all'interno del corpo del testo o nelle sezioni successive (come i paragrafi che iniziano con \"EMANA\" o \"ART. 1\"). Non inventare, non parafrasare e non correggere i refusi: copia il titolo iniziale testualmente cos\u00ec come appare in cima. Unisci il testo in un'unica stringa senza ritorni a capo.\n\n- scadenza: Trova la data e l'ora limite per la presentazione delle domande. Potrebbe trovarsi all'inizio del documento (es. \"SCADENZA: 19.12.2025\") oppure essere specificata nel corpo del testo (es. sotto l'Articolo \"Domande e termine\"). Formatala SEMPRE E SOLO cos\u00ec: GG/MM/AAAA ore HH:MM (es. 19/12/2025 ore 12:00).\n\n- requisiti: Cerca l'articolo dedicato ai \"Requisiti di ammissione\" o \"Requisiti di partecipazione\". Estrai SOLO i requisiti obbligatori. Escludi categoricamente i requisiti \"preferenziali\" o i titoli valutabili a punteggio. \nREGOLA TASSATIVA DI PULIZIA: Rimuovi tassativamente la lettera iniziale, il punto, la parentesi o lo spazio che fa da prefisso a ogni requisito (es. la stringa \"a. et\u00e0 non inferiore...\" deve diventare \"et\u00e0 non inferiore...\", la stringa \"b) cittadinanza...\" deve diventare \"cittadinanza...\"). Ogni stringa all'interno del vettore deve iniziare direttamente con il testo del requisito, senza alcun marker alfabetico o numerico. Restituisci un testo pulito e ben formattato.\n\nPASSO 2 \u2013 RICERCA NEL DATABASE MONGODB (ANTI-DUPLICATI):\n\nDevi usare il tool MongoDB per verificare se QUESTO ESATTO BANDO esiste gi\u00e0 nel database, evitando duplicati se il nome file viene cambiato.\nUserai l'operatore logico $or per cercare un match esatto sull'impronta digitale del file (file_hash) OPPURE un match sul Titolo e Scadenza.\n\nREGOLE PER LA QUERY MONGODB:\nCostruisci esattamente questa query, sostituendo i placeholder tra parentesi quadre:\n{\n  \"$or\": [\n    { \"output.file_hash\": \"{{ $json.file_hash }}\" },\n    {\n      \"output.titolo\": { \"$regex\": \"[PAROLA DISTINTIVA DEL TITOLO (es. COOP4PEDS)]\", \"$options\": \"i\" },\n      \"output.scadenza\": { \"$regex\": \"[DATA GG/MM/AAAA]\", \"$options\": \"i\" }\n    }\n  ]\n}\n\nDopo aver eseguito il tool:\n- Se restituisce almeno 1 documento \u2192 gia_presente = true\n- Se restituisce 0 documenti \u2192 gia_presente = false\n\nPASSO 3 \u2013 OUTPUT FINALE:\nCompila lo schema JSON richiesto, inserendo anche file_hash e metadati_pdf in modo che vengano salvati nel database.\nNon aggiungere commenti fuori dal JSON.\n\nDATI DA ANALIZZARE:\nFile Hash MD5: {{ $json.file_hash }}\nMetadati Nascosti: {{ JSON.stringify($json.metadati_pdf) }}\nTesto Estratto: \n{{ $json.testo_ridotto }}",
         "hasOutputParser": true,
         "options": {}
       },
@@ -67,7 +67,7 @@
     {
       "parameters": {
         "schemaType": "manual",
-        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"titolo\": {\n      \"type\": \"string\",\n      \"description\": \"Il titolo principale formale del documento, estratto letteralmente dalle primissime righe in cima al testo (es. BANDO DI SELEZIONE, AVVISO DI VACANZA, ecc.), unendo le righe in una sola stringa senza ritorni a capo.\"\n    },\n    \"scadenza\": {\n      \"type\": \"string\",\n      \"description\": \"La data e l'ora di scadenza del bando nel formato GG/MM/AAAA ore HH:MM. Se l'orario non è specificato nel documento, indicare solo la data GG/MM/AAAA.\"\n    },\n    \"requisiti\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"string\"\n      },\n      \"description\": \"Lista dei soli requisiti obbligatori di ammissione elencati con lettere a), b), c)... nell'articolo sui requisiti. Ogni requisito è un elemento separato. Massimo 10 voci, sintetizzate in frasi brevi mantenendo la punteggiatura originale.\"\n    },\n    \"gia_presente\": {\n      \"type\": \"boolean\",\n      \"description\": \"true se il tool MongoDB ha trovato un documento corrispondente, false se non ha trovato nulla.\"\n    },\n    \"file_hash\": {\n      \"type\": \"string\",\n      \"description\": \"Copia e incolla esattamente il File Hash MD5 ricevuto in input.\"\n    },\n    \"metadati_pdf\": {\n      \"type\": \"object\",\n      \"additionalProperties\": true,\n      \"description\": \"Copia e incolla l'intero oggetto JSON dei Metadati Nascosti ricevuto in input.\"\n    }\n  },\n  \"required\": [\"titolo\", \"scadenza\", \"requisiti\", \"gia_presente\", \"file_hash\", \"metadati_pdf\"]\n}"
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"titolo\": {\n      \"type\": \"string\",\n      \"description\": \"Il titolo principale formale del documento, estratto letteralmente dalle primissime righe in cima al testo (es. BANDO DI SELEZIONE, AVVISO DI VACANZA, ecc.), unendo le righe in una sola stringa senza ritorni a capo.\"\n    },\n    \"scadenza\": {\n      \"type\": \"string\",\n      \"description\": \"La data e l'ora di scadenza del bando nel formato GG/MM/AAAA ore HH:MM. Se l'orario non \u00e8 specificato nel documento, indicare solo la data GG/MM/AAAA.\"\n    },\n    \"requisiti\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"string\"\n      },\n      \"description\": \"Lista dei soli requisiti obbligatori di ammissione elencati con lettere a), b), c)... nell'articolo sui requisiti. Ogni requisito \u00e8 un elemento separato. Massimo 10 voci, sintetizzate in frasi brevi mantenendo la punteggiatura originale.\"\n    },\n    \"gia_presente\": {\n      \"type\": \"boolean\",\n      \"description\": \"true se il tool MongoDB ha trovato un documento corrispondente, false se non ha trovato nulla.\"\n    },\n    \"file_hash\": {\n      \"type\": \"string\",\n      \"description\": \"Copia e incolla esattamente il File Hash MD5 ricevuto in input.\"\n    },\n    \"metadati_pdf\": {\n      \"type\": \"object\",\n      \"additionalProperties\": true,\n      \"description\": \"Copia e incolla l'intero oggetto JSON dei Metadati Nascosti ricevuto in input.\"\n    }\n  },\n  \"required\": [\"titolo\", \"scadenza\", \"requisiti\", \"gia_presente\", \"file_hash\", \"metadati_pdf\"]\n}"
       },
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.3,
@@ -101,7 +101,7 @@
     {
       "parameters": {
         "descriptionType": "manual",
-        "toolDescription": "Usa questo tool per cercare se un bando con titolo simile \nesiste già nel database MongoDB. Passa una query con regex \nsul campo output.titolo per trovare corrispondenze parziali.",
+        "toolDescription": "Usa questo tool per cercare se un bando con titolo simile \nesiste gi\u00e0 nel database MongoDB. Passa una query con regex \nsul campo output.titolo per trovare corrispondenze parziali.",
         "collection": "bandi_estratti",
         "options": {}
       },
@@ -224,8 +224,8 @@
     {
       "parameters": {
         "sendTo": "testdigitalbusiness1@gmail.com",
-        "subject": "={{ $json.output.priorita == 'Scaduto' ? '⚫️ [SCADUTO] ' : ($json.output.priorita == 'Alta' ? '🚨 [URGENTE] ' : ($json.output.priorita == 'Media' ? '⚠️ [ATTENZIONE] ' : '📋 ')) }}Nuovo Bando Rilevato: {{ $node[\"AI Agent\"].json.output.titolo }}",
-        "message": "=<p>Ciao Team,</p>\n\n<p>Il sistema di monitoraggio ha rilevato un nuovo bando attivo caricato tramite il portale.</p>\n\n<h3>Dettagli del bando:</h3>\n<ul>\n    <li><b>Titolo:</b> {{ $json.output.titolo }}</li>\n    <li><b>Scadenza:</b> <span style=\"color: #d93025;\"><b>{{ $json.output.ScadenzaISO.split('T')[0].split('-').reverse().join('/') }} ore {{ $json.output.ScadenzaISO.split('T')[1].substring(0,5) }}</b></span></li>\n    <li><b>Priorità:</b> <span style=\"color: {{ $json.output.priorita == 'Scaduto' ? '#757575' : ($json.output.priorita == 'Alta' ? '#d93025' : ($json.output.priorita == 'Media' ? '#ef6c00' : '#1a73e8')) }};\"><b>{{ $json.output.priorita }}</b></span></li>\n</ul>\n\n<p><i>L'evento è stato aggiunto automaticamente al Calendario Aziendale per la data della scadenza.</i></p>\n\n<h3>Requisiti Principali:</h3>\n<ul>\n    {{ $json.output.requisiti.map(req => '<li>' + req + '</li>').join('') }}\n</ul>\n\n<br>\n<hr>",
+        "subject": "={{ $json.output.priorita == 'Scaduto' ? '\u26ab\ufe0f [SCADUTO] ' : ($json.output.priorita == 'Alta' ? '\ud83d\udea8 [URGENTE] ' : ($json.output.priorita == 'Media' ? '\u26a0\ufe0f [ATTENZIONE] ' : '\ud83d\udccb ')) }}Nuovo Bando Rilevato: {{ $node[\"AI Agent\"].json.output.titolo }}",
+        "message": "=<p>Ciao Team,</p>\n\n<p>Il sistema di monitoraggio ha rilevato un nuovo bando attivo caricato tramite il portale.</p>\n\n<h3>Dettagli del bando:</h3>\n<ul>\n    <li><b>Titolo:</b> {{ $json.output.titolo }}</li>\n    <li><b>Scadenza:</b> <span style=\"color: #d93025;\"><b>{{ $json.output.ScadenzaISO.split('T')[0].split('-').reverse().join('/') }} ore {{ $json.output.ScadenzaISO.split('T')[1].substring(0,5) }}</b></span></li>\n    <li><b>Priorit\u00e0:</b> <span style=\"color: {{ $json.output.priorita == 'Scaduto' ? '#757575' : ($json.output.priorita == 'Alta' ? '#d93025' : ($json.output.priorita == 'Media' ? '#ef6c00' : '#1a73e8')) }};\"><b>{{ $json.output.priorita }}</b></span></li>\n</ul>\n\n<p><i>L'evento \u00e8 stato aggiunto automaticamente al Calendario Aziendale per la data della scadenza.</i></p>\n\n<h3>Requisiti Principali:</h3>\n<ul>\n    {{ $json.output.requisiti.map(req => '<li>' + req + '</li>').join('') }}\n</ul>\n\n<br>\n<hr>",
         "options": {}
       },
       "type": "n8n-nodes-base.gmail",
@@ -257,7 +257,7 @@
         "additionalFields": {
           "color": "={{ $json.output.priorita == 'Scaduto' ? '8' : ($json.output.priorita == 'Alta' ? '11' : ($json.output.priorita == 'Media' ? '4' : '9')) }}",
           "description": "=Requisiti estratti:\n- {{ $json.output.requisiti.join('\\n- ') }}",
-          "summary": "=⚠️ SCADENZA: {{ $json.output.titolo }}"
+          "summary": "=\u26a0\ufe0f SCADENZA: {{ $json.output.titolo }}"
         }
       },
       "type": "n8n-nodes-base.googleCalendar",
@@ -278,7 +278,7 @@
     {
       "parameters": {
         "language": "pythonNative",
-        "pythonCode": "import re\n\n# Recuperiamo il primo elemento in ingresso dal nodo precedente di n8n\nitem = _items[0]\ntext = item[\"json\"].get('text', '')\n\n# RIMOZIONE RUMORE STRUTTURALE (Header, Footer, Firme burocratiche)\n# Rimuoviamo elementi ricorrenti e rumore che non contengono dati utili \n# ai fini dell'estrazione (es. numerazione pagine, nomi degli uffici, firme dei responsabili)\nPATTERNS_DA_RIMUOVERE = [\n    r'Pag\\.\\s*\\d+\\s*(di|a)\\s*\\d+',                # Numerazione pagine (es: Pag. 1 di 5)\n    r'Direzione per gli Affari[^\\n]*',            # Dettagli di uffici e direzioni\n    r'Direzione Gestione Risorse[^\\n]*',\n    r'Settore Reclutamento[^\\n]*',\n    r'Settore Risorse Umane[^\\n]*',\n    r'Ufficio Contratti[^\\n]*',\n    r'Il Responsabile del Procedimento\\n[^\\n]*',  # Blocchi di firma a fine pagina\n    r\"Il Responsabile dell'Ufficio\\n[^\\n]*\",\n    r'Il Responsabile di Settore\\n[^\\n]*'\n]\n\ntesto_pulito = text\nfor pattern in PATTERNS_DA_RIMUOVERE:\n    testo_pulito = re.sub(pattern, '', testo_pulito, flags=re.IGNORECASE)\n\n\n# TAGLIO DELLA CODA DEL DOCUMENTO (Sezioni successive ai requisiti)\n\n# I dettagli importanti (scadenze, requisiti) sono all'inizio del bando.\n# Tagliamo il testo non appena iniziano gli articoli relativi alle modalità \n# di candidatura, commissione o note legali per risparmiare token di input dell'LLM.\n\n# Cerchiamo l'inizio delle sezioni successive (es: ART. 5, ART. 6, ecc.)\nart_fine_match = re.search(r'\\nART[\\.\\s]+[56789]\\s*[–\\-]', testo_pulito, re.IGNORECASE)\n\n# Fallback: se gli articoli non sono definiti, cerchiamo intestazioni testuali comuni\nif not art_fine_match:\n    art_fine_match = re.search(\n        r'\\n\\s*(Modalità di presentazione|Domanda di partecipazione|Presentazione della domanda|Valutazione dei candidati|Commissione giudicatrice)', \n        testo_pulito, \n        re.IGNORECASE\n    )\n\n# Se troviamo un'ancora di taglio, tronchiamo lì; altrimenti limitiamo il tutto ad una sicurezza di 6000 caratteri totali\nif art_fine_match:\n    testo_ridotto = testo_pulito[:art_fine_match.start()]\nelse:\n    testo_ridotto = testo_pulito[:6000]\n\n# Compattiamo gli \"a capo\" multipli consecutivi (maggiori di 2) per normalizzare la spaziatura\ntesto_ridotto = re.sub(r'\\n{3,}', '\\n\\n', testo_ridotto).strip()\n\n# Restituiamo il dizionario nel formato compatibile con i nodi successivi di n8n\nreturn [{\"json\": {\"testo_ridotto\": testo_ridotto}}]\n"
+        "pythonCode": "import re\n\n# Recuperiamo il primo elemento in ingresso dal nodo precedente di n8n\nitem = _items[0]\ntext = item[\"json\"].get('text', '')\n\n# RIMOZIONE RUMORE STRUTTURALE (Header, Footer, Firme burocratiche)\n# Rimuoviamo elementi ricorrenti e rumore che non contengono dati utili \n# ai fini dell'estrazione (es. numerazione pagine, nomi degli uffici, firme dei responsabili)\nPATTERNS_DA_RIMUOVERE = [\n    r'Pag\\.\\s*\\d+\\s*(di|a)\\s*\\d+',                # Numerazione pagine (es: Pag. 1 di 5)\n    r'Direzione per gli Affari[^\\n]*',            # Dettagli di uffici e direzioni\n    r'Direzione Gestione Risorse[^\\n]*',\n    r'Settore Reclutamento[^\\n]*',\n    r'Settore Risorse Umane[^\\n]*',\n    r'Ufficio Contratti[^\\n]*',\n    r'Il Responsabile del Procedimento\\n[^\\n]*',  # Blocchi di firma a fine pagina\n    r\"Il Responsabile dell'Ufficio\\n[^\\n]*\",\n    r'Il Responsabile di Settore\\n[^\\n]*'\n]\n\ntesto_pulito = text\nfor pattern in PATTERNS_DA_RIMUOVERE:\n    testo_pulito = re.sub(pattern, '', testo_pulito, flags=re.IGNORECASE)\n\n\n# TAGLIO DELLA CODA DEL DOCUMENTO (Sezioni successive ai requisiti)\n\n# I dettagli importanti (scadenze, requisiti) sono all'inizio del bando.\n# Tagliamo il testo non appena iniziano gli articoli relativi alle modalit\u00e0 \n# di candidatura, commissione o note legali per risparmiare token di input dell'LLM.\n\n# Cerchiamo l'inizio delle sezioni successive (es: ART. 5, ART. 6, ecc.)\nart_fine_match = re.search(r'\\nART[\\.\\s]+[56789]\\s*[\u2013\\-]', testo_pulito, re.IGNORECASE)\n\n# Fallback: se gli articoli non sono definiti, cerchiamo intestazioni testuali comuni\nif not art_fine_match:\n    art_fine_match = re.search(\n        r'\\n\\s*(Modalit\u00e0 di presentazione|Domanda di partecipazione|Presentazione della domanda|Valutazione dei candidati|Commissione giudicatrice)', \n        testo_pulito, \n        re.IGNORECASE\n    )\n\n# Se troviamo un'ancora di taglio, tronchiamo l\u00ec; altrimenti limitiamo il tutto ad una sicurezza di 6000 caratteri totali\nif art_fine_match:\n    testo_ridotto = testo_pulito[:art_fine_match.start()]\nelse:\n    testo_ridotto = testo_pulito[:6000]\n\n# Compattiamo gli \"a capo\" multipli consecutivi (maggiori di 2) per normalizzare la spaziatura\ntesto_ridotto = re.sub(r'\\n{3,}', '\\n\\n', testo_ridotto).strip()\n\n# Restituiamo il dizionario nel formato compatibile con i nodi successivi di n8n\nreturn [{\"json\": {\"testo_ridotto\": testo_ridotto}}]\n"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -292,7 +292,7 @@
     {
       "parameters": {
         "language": "pythonNative",
-        "pythonCode": "import re\nfrom datetime import datetime\n\n# Ciclo principale su tutti gli elementi ricevuti dal nodo precedente\nfor item in _items:\n    # Estraiamo l'oggetto 'output' generato dal parser dell'Agente AI\n    agente_output = item[\"json\"].get(\"output\", {})\n    \n    # ==========================================\n    # PULIZIA DEI DATI PER IL DATABASE\n    # Rimuoviamo 'gia_presente' da 'output' così MongoDB NON la inserisce nel DB\n    gia_presente = agente_output.pop(\"gia_presente\", None)\n    # ==========================================\n    \n    # Inizializzazione variabili per il calcolo temporale e la priorità\n    scadenza_raw = agente_output.get('scadenza', '')\n    priorita = \"Bassa\"\n    scadenza_iso = \"\"\n    \n    # PARSING DELLA DATA DI SCADENZA\n    if not scadenza_raw or scadenza_raw.lower() == \"non specificato\":\n        priorita = \"Data Mancante\"\n    else:\n        # Normalizziamo la stringa rimuovendo il termine \"ore\" ed eventuali spazi superflui\n        clean = re.sub(r'(?i)ore\\s*', '', scadenza_raw).strip()\n        \n        # Suddividiamo la componente data (DD/MM/YYYY) e quella oraria (HH:MM)\n        parts = re.split(r'\\s+', clean)\n        date_part = parts[0]\n        time_part = parts[1] if len(parts) > 1 else \"23:59\"\n        \n        # Standardizziamo il separatore dell'ora\n        time_part = time_part.replace('.', ':')\n        \n        # Aggiungiamo i secondi (:00) per rispettare lo standard ISO 8601 completo\n        if len(time_part.split(':')) == 2:\n            time_part += \":00\"\n            \n        # Splittiamo i frammenti della data supportando barre (/), punti (.) e trattini (-)\n        date_fragments = re.split(r'[/\\.\\-]', date_part)\n        \n        if len(date_fragments) == 3:\n            # Riconoscimento dinamico del formato (YYYY-MM-DD vs DD-MM-YYYY)\n            if len(date_fragments[0]) == 4:\n                year, month, day = date_fragments\n            else:\n                day, month, year = date_fragments\n                \n            # Padding a due cifre per mese e giorno (es: \"9\" -> \"09\")\n            month = month.zfill(2)\n            day = day.zfill(2)\n            \n            # Generazione stringa ISO 8601 (YYYY-MM-DDTHH:MM:SS) per persistenza e API\n            scadenza_iso = f\"{year}-{month}-{day}T{time_part}\"\n            \n            # CALCOLO E ASSEGNAZIONE PRIORITÀ\n            try:\n                data_scadenza = datetime(int(year), int(month), int(day))\n                data_oggi = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)\n                \n                # Calcolo della differenza in giorni solari residui\n                diff_giorni = (data_scadenza - data_oggi).days\n                \n                # Regole di business basate sulla vicinanza della scadenza\n                if diff_giorni < 0:\n                    priorita = \"Scaduto\"\n                elif 0 <= diff_giorni < 7:\n                    priorita = \"Alta\"\n                elif 7 <= diff_giorni <= 15:\n                    priorita = \"Media\"\n                else:\n                    priorita = \"Bassa\"\n            except ValueError:\n                priorita = \"Errore Calendario\"\n        else:\n            priorita = \"Errore Formato Data\"\n            \n    # Arricchiamo l'oggetto output con i metadati calcolati\n    agente_output[\"priorita\"] = priorita\n    agente_output[\"ScadenzaISO\"] = scadenza_iso\n    \n    # Rimuoviamo la stringa grezza 'scadenza' per mantenere solo lo standard universale ISO\n    agente_output.pop(\"scadenza\", None)\n    \n    # Aggiorniamo il payload: l'output va a MongoDB, gia_presente va solo al frontend/webhook\n    item[\"json\"] = {\n        \"output\": agente_output,\n        \"gia_presente\": gia_presente\n    }\n\n# Restituiamo gli elementi modificati al nodo n8n successivo\nreturn _items"
+        "pythonCode": "import re\nfrom datetime import datetime\n\n# Ciclo principale su tutti gli elementi ricevuti dal nodo precedente\nfor item in _items:\n    # Estraiamo l'oggetto 'output' generato dal parser dell'Agente AI\n    agente_output = item[\"json\"].get(\"output\", {})\n    \n    # ==========================================\n    # PULIZIA DEI DATI PER IL DATABASE\n    # Rimuoviamo 'gia_presente' da 'output' cos\u00ec MongoDB NON la inserisce nel DB\n    gia_presente = agente_output.pop(\"gia_presente\", None)\n    # ==========================================\n    \n    # Inizializzazione variabili per il calcolo temporale e la priorit\u00e0\n    scadenza_raw = agente_output.get('scadenza', '')\n    priorita = \"Bassa\"\n    scadenza_iso = \"\"\n    \n    # PARSING DELLA DATA DI SCADENZA\n    if not scadenza_raw or scadenza_raw.lower() == \"non specificato\":\n        priorita = \"Data Mancante\"\n    else:\n        # Normalizziamo la stringa rimuovendo il termine \"ore\" ed eventuali spazi superflui\n        clean = re.sub(r'(?i)ore\\s*', '', scadenza_raw).strip()\n        \n        # Suddividiamo la componente data (DD/MM/YYYY) e quella oraria (HH:MM)\n        parts = re.split(r'\\s+', clean)\n        date_part = parts[0]\n        time_part = parts[1] if len(parts) > 1 else \"23:59\"\n        \n        # Standardizziamo il separatore dell'ora\n        time_part = time_part.replace('.', ':')\n        \n        # Aggiungiamo i secondi (:00) per rispettare lo standard ISO 8601 completo\n        if len(time_part.split(':')) == 2:\n            time_part += \":00\"\n            \n        # Splittiamo i frammenti della data supportando barre (/), punti (.) e trattini (-)\n        date_fragments = re.split(r'[/\\.\\-]', date_part)\n        \n        if len(date_fragments) == 3:\n            # Riconoscimento dinamico del formato (YYYY-MM-DD vs DD-MM-YYYY)\n            if len(date_fragments[0]) == 4:\n                year, month, day = date_fragments\n            else:\n                day, month, year = date_fragments\n                \n            # Padding a due cifre per mese e giorno (es: \"9\" -> \"09\")\n            month = month.zfill(2)\n            day = day.zfill(2)\n            \n            # Generazione stringa ISO 8601 (YYYY-MM-DDTHH:MM:SS) per persistenza e API\n            scadenza_iso = f\"{year}-{month}-{day}T{time_part}\"\n            \n            # CALCOLO E ASSEGNAZIONE PRIORIT\u00c0\n            try:\n                data_scadenza = datetime(int(year), int(month), int(day))\n                data_oggi = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)\n                \n                # Calcolo della differenza in giorni solari residui\n                diff_giorni = (data_scadenza - data_oggi).days\n                \n                # Regole di business basate sulla vicinanza della scadenza\n                if diff_giorni < 0:\n                    priorita = \"Scaduto\"\n                elif 0 <= diff_giorni < 7:\n                    priorita = \"Alta\"\n                elif 7 <= diff_giorni <= 15:\n                    priorita = \"Media\"\n                else:\n                    priorita = \"Bassa\"\n            except ValueError:\n                priorita = \"Errore Calendario\"\n        else:\n            priorita = \"Errore Formato Data\"\n            \n    # Arricchiamo l'oggetto output con i metadati calcolati\n    agente_output[\"priorita\"] = priorita\n    agente_output[\"ScadenzaISO\"] = scadenza_iso\n    \n    # Rimuoviamo la stringa grezza 'scadenza' per mantenere solo lo standard universale ISO\n    agente_output.pop(\"scadenza\", None)\n    \n    # Aggiorniamo il payload: l'output va a MongoDB, gia_presente va solo al frontend/webhook\n    item[\"json\"] = {\n        \"output\": agente_output,\n        \"gia_presente\": gia_presente\n    }\n\n# Restituiamo gli elementi modificati al nodo n8n successivo\nreturn _items"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -301,12 +301,12 @@
         2144
       ],
       "id": "43a0217d-0b51-44df-8443-b53a38cd45a1",
-      "name": "Calcolo Priorità & Conversione formato orario_Python "
+      "name": "Calcolo Priorit\u00e0 & Conversione formato orario_Python "
     },
     {
       "parameters": {
         "language": "pythonNative",
-        "pythonCode": "import pdfplumber\nimport io\nimport re\nimport base64\nimport hashlib\n\n# 1. Recuperiamo l'elemento in ingresso e la stringa Base64 creata dal nodo JavaScript\nitem = _items[0]\nbinary_data = item[\"json\"][\"pdf_base64\"]\n\n# Riconvertiamo la stringa nei byte reali del PDF\npdf_bytes = io.BytesIO(base64.b64decode(binary_data))\n\n# Calcolo Hash MD5 del file originale per identificazione univoca\nfile_hash = hashlib.md5(pdf_bytes.getvalue()).hexdigest()\n\ntesto_pulito = \"\"\npdf_metadata = {}\n\n# 2. Analisi visuale del PDF con pdfplumber\nwith pdfplumber.open(pdf_bytes) as pdf:\n    # Salviamo i metadati nativi del file PDF (es. CreationDate)\n    if pdf.metadata:\n        for k, v in pdf.metadata.items():\n            try:\n                if isinstance(v, bytes):\n                    pdf_metadata[k] = v.decode('utf-8', errors='ignore')\n                else:\n                    pdf_metadata[k] = str(v)\n            except:\n                pass\n                \n    # Aggiungiamo 'enumerate' per tracciare il numero di pagina\n    for i, page in enumerate(pdf.pages):\n        width = page.width\n        height = page.height\n        \n        # 3. RIMOZIONE GEOMETRICA DEL RUMORE\n        # Sulla prima pagina (i=0) il margine superiore è piccolissimo (5%) per salvare il titolo.\n        # Sulle pagine successive applichiamo il taglio standard del 15% per rimuovere intestazioni.\n        if i == 0:\n            top_margin = height * 0.05\n        else:\n            top_margin = height * 0.15\n            \n        bottom_margin = height * 0.90  # Ignora l'ultimo 10% in basso\n        \n        # Definiamo l'area utile (x0, top, x1, bottom)\n        bbox = (0, top_margin, width, bottom_margin)\n        cropped_page = page.crop(bbox)\n        \n        # Estraiamo il testo SOLO dalla parte centrale della pagina\n        page_text = cropped_page.extract_text()\n        \n        if page_text:\n            testo_pulito += page_text + \"\\n\\n\"\n\n# FIX BUG PDFPLUMBER: Decodifica manuale dei caratteri (cid:XX) generati dai font Ghostscript\ndef decodifica_cid(match):\n    try:\n        return chr(int(match.group(1)))\n    except:\n        return match.group(0)\n\ntesto_pulito = re.sub(r'\\(cid:(\\d+)\\)', decodifica_cid, testo_pulito)\n\n# 4. TAGLIO DELLA CODA DEL DOCUMENTO\nart_fine_match = re.search(r'\\nART[\\.\\s]+[56789]\\s*[–\\-]', testo_pulito, re.IGNORECASE)\n\nif not art_fine_match:\n    art_fine_match = re.search(\n        r'\\n\\s*(Modalità di presentazione|Domanda di partecipazione|Presentazione della domanda|Valutazione dei candidati|Commissione giudicatrice)', \n        testo_pulito, \n        re.IGNORECASE\n    )\n\nif art_fine_match:\n    testo_ridotto = testo_pulito[:art_fine_match.start()]\nelse:\n    testo_ridotto = testo_pulito[:6000]\n\ntesto_ridotto = re.sub(r'\\n{3,}', '\\n\\n', testo_ridotto).strip()\n\n# Restituiamo il risultato al formato JSON compatibile con i nodi successivi\nreturn [{\"json\": {\n    \"testo_ridotto\": testo_ridotto,\n    \"file_hash\": file_hash,\n    \"metadati_pdf\": pdf_metadata\n}}]"
+        "pythonCode": "import pdfplumber\nimport io\nimport re\nimport base64\nimport hashlib\n\n# 1. Recuperiamo l'elemento in ingresso e la stringa Base64 creata dal nodo JavaScript\nitem = _items[0]\nbinary_data = item[\"json\"][\"pdf_base64\"]\n\n# Riconvertiamo la stringa nei byte reali del PDF\npdf_bytes = io.BytesIO(base64.b64decode(binary_data))\n\n# Calcolo Hash MD5 del file originale per identificazione univoca\nfile_hash = hashlib.md5(pdf_bytes.getvalue()).hexdigest()\n\ntesto_pulito = \"\"\npdf_metadata = {}\n\n# 2. Analisi visuale del PDF con pdfplumber\nwith pdfplumber.open(pdf_bytes) as pdf:\n    # Salviamo i metadati nativi del file PDF (es. CreationDate)\n    if pdf.metadata:\n        for k, v in pdf.metadata.items():\n            try:\n                if isinstance(v, bytes):\n                    pdf_metadata[k] = v.decode('utf-8', errors='ignore')\n                else:\n                    pdf_metadata[k] = str(v)\n            except:\n                pass\n                \n    # Aggiungiamo 'enumerate' per tracciare il numero di pagina\n    for i, page in enumerate(pdf.pages):\n        width = page.width\n        height = page.height\n        \n        # 3. RIMOZIONE GEOMETRICA DEL RUMORE\n        # Sulla prima pagina (i=0) il margine superiore \u00e8 piccolissimo (5%) per salvare il titolo.\n        # Sulle pagine successive applichiamo il taglio standard del 15% per rimuovere intestazioni.\n        if i == 0:\n            top_margin = height * 0.05\n        else:\n            top_margin = height * 0.15\n            \n        bottom_margin = height * 0.90  # Ignora l'ultimo 10% in basso\n        \n        # Definiamo l'area utile (x0, top, x1, bottom)\n        bbox = (0, top_margin, width, bottom_margin)\n        cropped_page = page.crop(bbox)\n        \n        # Estraiamo il testo SOLO dalla parte centrale della pagina\n        page_text = cropped_page.extract_text()\n        \n        if page_text:\n            testo_pulito += page_text + \"\\n\\n\"\n\n# FIX BUG PDFPLUMBER: Decodifica manuale dei caratteri (cid:XX) generati dai font Ghostscript\ndef decodifica_cid(match):\n    try:\n        return chr(int(match.group(1)))\n    except:\n        return match.group(0)\n\ntesto_pulito = re.sub(r'\\(cid:(\\d+)\\)', decodifica_cid, testo_pulito)\n\n# 4. TAGLIO DELLA CODA DEL DOCUMENTO\nart_fine_match = re.search(r'\\nART[\\.\\s]+[56789]\\s*[\u2013\\-]', testo_pulito, re.IGNORECASE)\n\nif not art_fine_match:\n    art_fine_match = re.search(\n        r'\\n\\s*(Modalit\u00e0 di presentazione|Domanda di partecipazione|Presentazione della domanda|Valutazione dei candidati|Commissione giudicatrice)', \n        testo_pulito, \n        re.IGNORECASE\n    )\n\nif art_fine_match:\n    testo_ridotto = testo_pulito[:art_fine_match.start()]\nelse:\n    testo_ridotto = testo_pulito[:6000]\n\ntesto_ridotto = re.sub(r'\\n{3,}', '\\n\\n', testo_ridotto).strip()\n\n# Restituiamo il risultato al formato JSON compatibile con i nodi successivi\nreturn [{\"json\": {\n    \"testo_ridotto\": testo_ridotto,\n    \"file_hash\": file_hash,\n    \"metadati_pdf\": pdf_metadata\n}}]"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -329,6 +329,195 @@
       ],
       "id": "9a7272aa-1f1c-4023-811a-05b5d6bd9aa6",
       "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "operation": "find",
+        "collection": "bandi_estratti",
+        "options": {}
+      },
+      "id": "a1b2c3d4-1111-1111-1111-111111111111",
+      "name": "Fetch Tutti i Bandi",
+      "type": "n8n-nodes-base.mongoDb",
+      "typeVersion": 1.2,
+      "position": [
+        192,
+        2640
+      ],
+      "credentials": {
+        "mongoDb": {
+          "id": "fbvEjAUuMn1jcPXk",
+          "name": "MongoDB account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "language": "pythonNative",
+        "pythonCode": "from datetime import datetime\n\n# ============================================================\n# BRANCH PARALLELO - Aggiornamento automatico priorita' bandi\n# ============================================================\n# Questo nodo viene eseguito ad ogni attivazione del workflow,\n# in parallelo all'elaborazione del nuovo PDF caricato.\n# Simula il comportamento di un cron notturno: verifica se\n# la priorita' di qualche bando gia' in DB e' cambiata rispetto\n# alla data odierna, e restituisce solo i bandi da aggiornare.\n# ============================================================\n\nrisultati_da_aggiornare = []\n\nfor item in _items:\n    doc = item[\"json\"]\n    output = doc.get(\"output\", {})\n\n    scadenza_iso     = output.get(\"ScadenzaISO\", \"\")\n    priorita_attuale = output.get(\"priorita\", \"\")\n    titolo           = output.get(\"titolo\", \"N/D\")\n\n    # Estrae _id come stringa\n    doc_id_raw = doc.get(\"_id\", \"\")\n    if isinstance(doc_id_raw, dict):\n        doc_id = doc_id_raw.get(\"$oid\", \"\")\n    else:\n        doc_id = str(doc_id_raw)\n\n    if not scadenza_iso or not doc_id:\n        continue\n\n    if priorita_attuale in [\"Data Mancante\", \"Errore Formato Data\", \"Errore Calendario\"]:\n        continue\n\n    try:\n        data_scadenza = datetime.fromisoformat(scadenza_iso.replace(\"Z\", \"\"))\n        data_oggi = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)\n        diff_giorni = (data_scadenza - data_oggi).days\n\n        if diff_giorni < 0:\n            nuova_priorita = \"Scaduto\"\n        elif diff_giorni < 7:\n            nuova_priorita = \"Alta\"\n        elif diff_giorni <= 15:\n            nuova_priorita = \"Media\"\n        else:\n            nuova_priorita = \"Bassa\"\n    except Exception:\n        continue\n\n    if nuova_priorita != priorita_attuale:\n        colori = {\"Scaduto\": \"8\", \"Alta\": \"11\", \"Media\": \"4\", \"Bassa\": \"9\"}\n        risultati_da_aggiornare.append({\"json\": {\n            \"mongo_id\":        doc_id,\n            \"titolo\":          titolo,\n            \"priorita_vecchia\": priorita_attuale,\n            \"priorita_nuova\":   nuova_priorita,\n            \"ScadenzaISO\":     scadenza_iso,\n            \"colore_calendar\": colori.get(nuova_priorita, \"9\")\n        }})\n\nreturn risultati_da_aggiornare if risultati_da_aggiornare else [{\"json\": {\"nessun_aggiornamento\": True}}]\n"
+      },
+      "id": "b2c3d4e5-2222-2222-2222-222222222222",
+      "name": "Ricalcolo Priorit\u00e0 Bandi",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        416,
+        2640
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "prio-changed-check",
+              "leftValue": "={{ $json.mongo_id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "c3d4e5f6-3333-3333-3333-333333333333",
+      "name": "Priorit\u00e0 Cambiata?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        640,
+        2640
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nreturn items.map(item => {\n  const iso = item.json.ScadenzaISO || '';\n  return {\n    json: {\n      ...item.json,\n      // Campo con dot-notation: MongoDB interpreta \"output.priorita\" come\n      // campo nested e lo aggiorna con $set senza sovrascrivere il resto\n      \"output.priorita\": item.json.priorita_nuova,\n      // Calcola inizio e fine del giorno della scadenza per la ricerca Calendar\n      giorno_inizio: iso ? iso.split('T')[0] + 'T00:00:00' : '',\n      giorno_fine:   iso ? iso.split('T')[0] + 'T23:59:59' : ''\n    }\n  };\n});\n"
+      },
+      "id": "d4e5f6a7-4444-4444-4444-444444444444",
+      "name": "Prepara Aggiornamento",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        864,
+        2640
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "collection": "bandi_estratti",
+        "filter": "={ \"_id\": { \"$oid\": \"{{ $json.mongo_id }}\" } }",
+        "fields": "=output.priorita",
+        "options": {}
+      },
+      "id": "e5f6a7b8-5555-5555-5555-555555555555",
+      "name": "Aggiorna Priorit\u00e0 in MongoDB",
+      "type": "n8n-nodes-base.mongoDb",
+      "typeVersion": 1.2,
+      "position": [
+        1088,
+        2640
+      ],
+      "credentials": {
+        "mongoDb": {
+          "id": "fbvEjAUuMn1jcPXk",
+          "name": "MongoDB account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "calendar": {
+          "__rl": true,
+          "value": "testdigitalbusiness1@gmail.com",
+          "mode": "list",
+          "cachedResultName": "testdigitalbusiness1@gmail.com"
+        },
+        "returnAll": false,
+        "limit": 5,
+        "additionalFields": {
+          "timeMin": "={{ $('Prepara Aggiornamento').item.json.giorno_inizio }}",
+          "timeMax": "={{ $('Prepara Aggiornamento').item.json.giorno_fine }}",
+          "singleEvents": true,
+          "query": "=SCADENZA: {{ $('Prepara Aggiornamento').item.json.titolo.substring(0, 40) }}"
+        }
+      },
+      "id": "f6a7b8c9-6666-6666-6666-666666666666",
+      "name": "Cerca Evento Calendario",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [
+        1312,
+        2544
+      ],
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "VJUHNPqiivrbuv25",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "calendar": {
+          "__rl": true,
+          "value": "testdigitalbusiness1@gmail.com",
+          "mode": "list",
+          "cachedResultName": "testdigitalbusiness1@gmail.com"
+        },
+        "eventId": "={{ $json.id }}",
+        "updateFields": {
+          "color": "={{ $('Prepara Aggiornamento').item.json.colore_calendar }}"
+        }
+      },
+      "id": "a7b8c9d0-7777-7777-7777-777777777777",
+      "name": "Aggiorna Colore Evento",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [
+        1536,
+        2544
+      ],
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "VJUHNPqiivrbuv25",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "testdigitalbusiness1@gmail.com",
+        "subject": "=\ud83d\udd04 Cambio Priorit\u00e0 Bando: {{ $('Prepara Aggiornamento').item.json.titolo }}",
+        "message": "=<p>Ciao Team,</p>\n\n<p>Il sistema di monitoraggio ha aggiornato automaticamente la priorit\u00e0 di un bando nel database.</p>\n\n<h3>&#x1F504; Cambio di Priorit\u00e0 Rilevato:</h3>\n<ul>\n  <li><b>Titolo:</b> {{ $('Prepara Aggiornamento').item.json.titolo }}</li>\n  <li><b>Scadenza:</b> {{ $('Prepara Aggiornamento').item.json.ScadenzaISO.split('T')[0].split('-').reverse().join('/') }}</li>\n  <li><b>Priorit\u00e0 Precedente:</b> {{ $('Prepara Aggiornamento').item.json.priorita_vecchia }}</li>\n  <li><b>Nuova Priorit\u00e0:</b> <span style=\"color: {{ $('Prepara Aggiornamento').item.json.priorita_nuova == 'Scaduto' ? '#757575' : ($('Prepara Aggiornamento').item.json.priorita_nuova == 'Alta' ? '#d93025' : ($('Prepara Aggiornamento').item.json.priorita_nuova == 'Media' ? '#ef6c00' : '#1a73e8')) }};\"><b>{{ $('Prepara Aggiornamento').item.json.priorita_nuova }}</b></span></li>\n</ul>\n\n<p><i>Aggiornamento automatico eseguito dal workflow n8n ad ogni attivazione.</i></p>\n<hr>",
+        "options": {}
+      },
+      "id": "b8c9d0e1-8888-8888-8888-888888888888",
+      "name": "Email Notifica Cambio Priorit\u00e0",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1312,
+        2736
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "glC3XAfzE7uAAia8",
+          "name": "Gmail account"
+        }
+      }
     }
   ],
   "pinData": {},
@@ -338,6 +527,11 @@
         [
           {
             "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Fetch Tutti i Bandi",
             "type": "main",
             "index": 0
           }
@@ -364,7 +558,7 @@
       "main": [
         [
           {
-            "node": "Calcolo Priorità & Conversione formato orario_Python ",
+            "node": "Calcolo Priorit\u00e0 & Conversione formato orario_Python ",
             "type": "main",
             "index": 0
           }
@@ -436,7 +630,7 @@
         []
       ]
     },
-    "Calcolo Priorità & Conversione formato orario_Python ": {
+    "Calcolo Priorit\u00e0 & Conversione formato orario_Python ": {
       "main": [
         [
           {
@@ -468,6 +662,78 @@
         [
           {
             "node": "Code in Python",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Tutti i Bandi": {
+      "main": [
+        [
+          {
+            "node": "Ricalcolo Priorit\u00e0 Bandi",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ricalcolo Priorit\u00e0 Bandi": {
+      "main": [
+        [
+          {
+            "node": "Priorit\u00e0 Cambiata?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Priorit\u00e0 Cambiata?": {
+      "main": [
+        [
+          {
+            "node": "Prepara Aggiornamento",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Prepara Aggiornamento": {
+      "main": [
+        [
+          {
+            "node": "Aggiorna Priorit\u00e0 in MongoDB",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggiorna Priorit\u00e0 in MongoDB": {
+      "main": [
+        [
+          {
+            "node": "Cerca Evento Calendario",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Email Notifica Cambio Priorit\u00e0",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cerca Evento Calendario": {
+      "main": [
+        [
+          {
+            "node": "Aggiorna Colore Evento",
             "type": "main",
             "index": 0
           }
