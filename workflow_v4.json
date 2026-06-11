@@ -774,17 +774,6 @@
         ]
       ]
     },
-    "Cerca Evento Calendario": {
-      "main": [
-        [
-          {
-            "node": "Aggiorna Colore Evento",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "Ripristina Dati per Notifiche": {
       "main": [
         [
