@@ -354,7 +354,7 @@
     {
       "parameters": {
         "language": "pythonNative",
-        "pythonCode": "from datetime import datetime\n\n# ============================================================\n# BRANCH PARALLELO - Aggiornamento automatico priorita' bandi\n# ============================================================\n# Questo nodo viene eseguito ad ogni attivazione del workflow,\n# in parallelo all'elaborazione del nuovo PDF caricato.\n# Simula il comportamento di un cron notturno: verifica se\n# la priorita' di qualche bando gia' in DB e' cambiata rispetto\n# alla data odierna, e restituisce solo i bandi da aggiornare.\n# ============================================================\n\nrisultati_da_aggiornare = []\n\nfor item in _items:\n    doc = item[\"json\"]\n    output = doc.get(\"output\", {})\n\n    scadenza_iso     = output.get(\"ScadenzaISO\", \"\")\n    priorita_attuale = output.get(\"priorita\", \"\")\n    titolo           = output.get(\"titolo\", \"N/D\")\n\n    # Estrae _id come stringa\n    doc_id_raw = doc.get(\"_id\", \"\")\n    if isinstance(doc_id_raw, dict):\n        doc_id = doc_id_raw.get(\"$oid\", \"\")\n    else:\n        doc_id = str(doc_id_raw)\n\n    if not scadenza_iso or not doc_id:\n        continue\n\n    if priorita_attuale in [\"Data Mancante\", \"Errore Formato Data\", \"Errore Calendario\"]:\n        continue\n\n    try:\n        data_scadenza = datetime.fromisoformat(scadenza_iso.replace(\"Z\", \"\"))\n        data_oggi = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)\n        diff_giorni = (data_scadenza - data_oggi).days\n\n        if diff_giorni < 0:\n            nuova_priorita = \"Scaduto\"\n        elif diff_giorni < 7:\n            nuova_priorita = \"Alta\"\n        elif diff_giorni <= 15:\n            nuova_priorita = \"Media\"\n        else:\n            nuova_priorita = \"Bassa\"\n    except Exception:\n        continue\n\n    if nuova_priorita != priorita_attuale:\n        colori = {\"Scaduto\": \"8\", \"Alta\": \"11\", \"Media\": \"4\", \"Bassa\": \"9\"}\n        risultati_da_aggiornare.append({\"json\": {\n            \"_id\":             doc_id,\n            \"titolo\":          titolo,\n            \"priorita_vecchia\": priorita_attuale,\n            \"priorita_nuova\":   nuova_priorita,\n            \"ScadenzaISO\":     scadenza_iso,\n            \"colore_calendar\": colori.get(nuova_priorita, \"9\")\n        }})\n\nreturn risultati_da_aggiornare if risultati_da_aggiornare else [{\"json\": {\"nessun_aggiornamento\": True}}]\n"
+        "pythonCode": "from datetime import datetime\n\n# ============================================================\n# BRANCH PARALLELO - Aggiornamento automatico priorita' bandi\n# ============================================================\n# Questo nodo viene eseguito ad ogni attivazione del workflow,\n# in parallelo all'elaborazione del nuovo PDF caricato.\n# Simula il comportamento di un cron notturno: verifica se\n# la priorita' di qualche bando gia' in DB e' cambiata rispetto\n# alla data odierna, e restituisce solo i bandi da aggiornare.\n# ============================================================\n\nrisultati_da_aggiornare = []\n\nfor item in _items:\n    doc = item[\"json\"]\n    output = doc.get(\"output\", {})\n\n    scadenza_iso     = output.get(\"ScadenzaISO\", \"\")\n    priorita_attuale = output.get(\"priorita\", \"\")\n    titolo           = output.get(\"titolo\", \"N/D\")\n\n    # Estrae _id come stringa\n    doc_id_raw = doc.get(\"_id\", \"\")\n    if isinstance(doc_id_raw, dict):\n        doc_id = doc_id_raw.get(\"$oid\", \"\")\n    else:\n        doc_id = str(doc_id_raw)\n\n    if not scadenza_iso or not doc_id:\n        continue\n\n    if priorita_attuale in [\"Data Mancante\", \"Errore Formato Data\", \"Errore Calendario\"]:\n        continue\n\n    try:\n        data_scadenza = datetime.fromisoformat(scadenza_iso.replace(\"Z\", \"\"))\n        data_oggi = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)\n        diff_giorni = (data_scadenza - data_oggi).days\n\n        if diff_giorni < 0:\n            nuova_priorita = \"Scaduto\"\n        elif diff_giorni < 7:\n            nuova_priorita = \"Alta\"\n        elif diff_giorni <= 15:\n            nuova_priorita = \"Media\"\n        else:\n            nuova_priorita = \"Bassa\"\n    except Exception:\n        continue\n\n    if nuova_priorita != priorita_attuale:\n        colori = {\"Scaduto\": \"8\", \"Alta\": \"11\", \"Media\": \"4\", \"Bassa\": \"9\"}\n        risultati_da_aggiornare.append({\"json\": {\n            \"_id\":             doc_id,\n            \"titolo\":          titolo,\n            \"priorita_vecchia\": priorita_attuale,\n            \"priorita_nuova\":   nuova_priorita,\n            \"ScadenzaISO\":     scadenza_iso,\n            \"colore_calendar\": colori.get(nuova_priorita, \"9\"),\n            \"calendar_event_id\": doc.get(\"calendar_event_id\", \"\")\n        }})\n\nreturn risultati_da_aggiornare if risultati_da_aggiornare else [{\"json\": {\"nessun_aggiornamento\": True}}]\n"
       },
       "id": "b2c3d4e5-2222-2222-2222-222222222222",
       "name": "Ricalcolo Priorit\u00e0 Bandi",
@@ -477,9 +477,9 @@
           "mode": "list",
           "cachedResultName": "testdigitalbusiness1@gmail.com"
         },
-        "eventId": "={{ $json.id }}",
+        "eventId": "={{ $json.calendar_event_id }}",
         "updateFields": {
-          "color": "={{ $('Ripristina Dati per Notifiche').first().json.colore_calendar }}"
+          "color": "={{ $json.colore_calendar }}"
         }
       },
       "id": "a7b8c9d0-7777-7777-7777-777777777777",
@@ -531,6 +531,42 @@
         1312,
         2640
       ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Dopo che Google Calendar crea l'evento, salviamo il suo ID in MongoDB.\n// Questo ci permette di aggiornarlo in futuro senza doverlo cercare per titolo/data.\nconst items = $input.all();\nreturn items.map(item => ({\n  json: {\n    calendar_event_id: item.json.id,  // ID evento restituito da Google Calendar\n    // file_hash del bando: serve come chiave per aggiornare il documento MongoDB corretto\n    file_hash: $('Calcolo Priorit\\u00e0 & Conversione formato orario_Python ').item.json.output.file_hash\n  }\n}));\n"
+      },
+      "id": "cc2ee3ff-aaaa-bbbb-cccc-ddddeeee0001",
+      "name": "Prepara Salvataggio ID Evento",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1952,
+        1856
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "collection": "bandi_estratti",
+        "updateKey": "file_hash",
+        "fields": "calendar_event_id",
+        "options": {}
+      },
+      "id": "cc2ee3ff-aaaa-bbbb-cccc-ddddeeee0002",
+      "name": "Salva ID Evento in MongoDB",
+      "type": "n8n-nodes-base.mongoDb",
+      "typeVersion": 1.2,
+      "position": [
+        2176,
+        1856
+      ],
+      "credentials": {
+        "mongoDb": {
+          "id": "fbvEjAUuMn1jcPXk",
+          "name": "MongoDB account"
+        }
+      }
     }
   ],
   "pinData": {},
@@ -752,12 +788,34 @@
       "main": [
         [
           {
-            "node": "Cerca Evento Calendario",
+            "node": "Aggiorna Colore Evento",
             "type": "main",
             "index": 0
           },
           {
             "node": "Email Notifica Cambio Priorit\u00e0",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Creazione Evento in Calendario": {
+      "main": [
+        [
+          {
+            "node": "Prepara Salvataggio ID Evento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepara Salvataggio ID Evento": {
+      "main": [
+        [
+          {
+            "node": "Salva ID Evento in MongoDB",
             "type": "main",
             "index": 0
           }
