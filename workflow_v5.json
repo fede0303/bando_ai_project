@@ -1,0 +1,753 @@
+{
+  "name": "workflow_v5",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "pdf-upload",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "d42f9ed4-3f81-4ce1-a95d-8abb5a8035ee",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        13200,
+        5956
+      ],
+      "webhookId": "43430e83-f980-4957-bf36-a74348cac360"
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        14560,
+        5904
+      ],
+      "id": "d0844ea8-0b8c-4c63-9366-02bf1a4f1609",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Sei un analista esperto nell'estrazione dati dai bandi pubblici del Politecnico di Bari. Il tuo compito è leggere il documento fornito e compilare uno schema JSON preciso. I documenti possono avere formati e impaginazioni diverse, quindi usa la comprensione del testo, non la posizione fissa delle parole. Segui questi passi:\n\nPASSO 1 – ESTRAZIONE DAL TESTO:\n\n- titolo: Estrai il titolo principale formal del documento prendendolo ESCLUSIVAMENTE dalle primissime righe in cima al testo fornito (i primi 2-3 paragrafi al massimo). Cerca la frase iniziale che definisce l'oggetto o la natura del bando (es. \"BANDO DI SELEZIONE PUBBLICA...\", \"III Avviso di vacanza per il conferimento...\", \"AVVISO DI VACANZA...\"). \nREGOLA TASSATIVA: Non scorrere il documento verso il basso, non guardare assolutamente all'interno del corpo del testo o nelle sezioni successive (come i paragrafi che iniziano con \"EMANA\" o \"ART. 1\"). Non inventare, non parafrasare e non correggere i refusi: copia il titolo iniziale testualmente così come appare in cima. Unisci il testo in un'unica stringa senza ritorni a capo.\n\n- scadenza: Trova la data e l'ora limite per la presentazione delle domande. Potrebbe trovarsi all'inizio del documento (es. \"SCADENZA: 19.12.2025\") oppure essere specificata nel corpo del testo (es. sotto l'Articolo \"Domande e termine\"). Formatala SEMPRE E SOLO così: GG/MM/AAAA ore HH:MM (es. 19/12/2025 ore 12:00).\n\n- requisiti: Cerca l'articolo dedicato ai \"Requisiti di ammissione\" o \"Requisiti di partecipazione\". Estrai SOLO i requisiti obbligatori. Escludi categoricamente i requisiti \"preferenziali\" o i titoli valutabili a punteggio. \nREGOLA TASSATIVA DI PULIZIA: Rimuovi tassativamente la lettera iniziale, il punto, la parentesi o lo spazio che fa da prefisso a ogni requisito (es. la stringa \"a. età non inferiore...\" deve diventare \"età non inferiore...\", la stringa \"b) cittadinanza...\" deve diventare \"cittadinanza...\"). Ogni stringa all'interno del vettore deve iniziare direttamente con il testo del requisito, senza alcun marker alfabetico o numerico. Restituisci un testo pulito e ben formattato.\n\nPASSO 2 – RICERCA NEL DATABASE MONGODB (ANTI-DUPLICATI):\n\nDevi usare il tool MongoDB per verificare se QUESTO ESATTO BANDO esiste già nel database, evitando duplicati se il nome file viene cambiato.\nUserai l'operatore logico $or per cercare un match esatto sull'impronta digitale del file (file_hash) OPPURE un match sul Titolo e Scadenza.\n\nREGOLE PER LA QUERY MONGODB:\nCostruisci esattamente questa query, sostituendo i placeholder tra parentesi quadre:\n{\n  \"$or\": [\n    { \"output.file_hash\": \"{{ $json.file_hash }}\" },\n    {\n      \"output.titolo\": { \"$regex\": \"[PAROLA DISTINTIVA DEL TITOLO (es. COOP4PEDS)]\", \"$options\": \"i\" },\n      \"output.scadenza\": { \"$regex\": \"[DATA GG/MM/AAAA]\", \"$options\": \"i\" }\n    }\n  ]\n}\n\nDopo aver eseguito il tool:\n- Se restituisce almeno 1 documento → gia_presente = true\n- Se restituisce 0 documenti → gia_presente = false\n\nPASSO 3 – OUTPUT FINALE:\nCompila lo schema JSON richiesto, inserendo anche file_hash e metadati_pdf in modo che vengano salvati nel database.\nNon aggiungere commenti fuori dal JSON.\n\nDATI DA ANALIZZARE:\nFile Hash MD5: {{ $json.file_hash }}\nMetadati Nascosti: {{ JSON.stringify($json.metadati_pdf) }}\nTesto Estratto: \n{{ $json.testo_ridotto }}",
+        "hasOutputParser": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        13928,
+        5704
+      ],
+      "id": "aaf25fc7-7be5-4898-b660-61eac1d6b5b4",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"titolo\": {\n      \"type\": \"string\",\n      \"description\": \"Il titolo principale formale del documento, estratto letteralmente dalle primissime righe in cima al testo (es. BANDO DI SELEZIONE, AVVISO DI VACANZA, ecc.), unendo le righe in una sola stringa senza ritorni a capo.\"\n    },\n    \"scadenza\": {\n      \"type\": \"string\",\n      \"description\": \"La data e l'ora di scadenza del bando nel formato GG/MM/AAAA ore HH:MM. Se l'orario non è specificato nel documento, indicare solo la data GG/MM/AAAA.\"\n    },\n    \"requisiti\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"string\"\n      },\n      \"description\": \"Lista dei soli requisiti obbligatori di ammissione elencati con lettere a), b), c)... nell'articolo sui requisiti. Ogni requisito è un elemento separato. Massimo 10 voci, sintetizzate in frasi brevi mantenendo la punteggiatura originale.\"\n    },\n    \"gia_presente\": {\n      \"type\": \"boolean\",\n      \"description\": \"true se il tool MongoDB ha trovato un documento corrispondente, false se non ha trovato nulla.\"\n    },\n    \"file_hash\": {\n      \"type\": \"string\",\n      \"description\": \"Copia e incolla esattamente il File Hash MD5 ricevuto in input.\"\n    },\n    \"metadati_pdf\": {\n      \"type\": \"object\",\n      \"additionalProperties\": true,\n      \"description\": \"Copia e incolla l'intero oggetto JSON dei Metadati Nascosti ricevuto in input.\"\n    }\n  },\n  \"required\": [\"titolo\", \"scadenza\", \"requisiti\", \"gia_presente\", \"file_hash\", \"metadati_pdf\"]\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        14128,
+        5928
+      ],
+      "id": "94e69c1d-f930-485c-a9e2-ad02e340efb9",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-3.1-flash-lite",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        13872,
+        5928
+      ],
+      "id": "310eb01e-b2f7-4e6e-93db-37992ab8f8cf",
+      "name": "Google Gemini Chat Model1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "IoWb2K1MtT44l62P",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Usa questo tool per cercare se un bando con titolo simile \nesiste già nel database MongoDB. Passa una query con regex \nsul campo output.titolo per trovare corrispondenze parziali.",
+        "collection": "bandi_estratti",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mongoDbTool",
+      "typeVersion": 1.2,
+      "position": [
+        14000,
+        5928
+      ],
+      "id": "0477f10f-814b-436b-b871-4080a1825d39",
+      "name": "Find documents in MongoDB",
+      "credentials": {
+        "mongoDb": {
+          "id": "fbvEjAUuMn1jcPXk",
+          "name": "MongoDB account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "c9409e80-7783-4d4f-8c38-1877c212283a",
+              "leftValue": "={{ $('AI Agent').item.json.output.gia_presente }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        14560,
+        5712
+      ],
+      "id": "2c69df68-180c-4c76-a54b-393e6eae0e6e",
+      "name": "Verifica Presenza Bando in DB"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "a68883ad-41af-43c5-8c84-42eaf28f8ef2",
+              "leftValue": "={{ $json.output.ScadenzaISO }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "3e8ca582-b4fe-442d-8236-7cd2a31f617b",
+              "leftValue": "={{ $json.output.ScadenzaISO }}",
+              "rightValue": "={{ $now }}",
+              "operator": {
+                "type": "dateTime",
+                "operation": "after"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {
+          "ignoreCase": false
+        }
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        15008,
+        5712
+      ],
+      "id": "182b7616-a6f1-4569-9f2e-766957b5d9c9",
+      "name": "Verifica Bando Scaduto"
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "collection": "bandi_estratti",
+        "fields": "=output",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mongoDb",
+      "typeVersion": 1.2,
+      "position": [
+        14784,
+        5712
+      ],
+      "id": "d0f56cf0-c0e1-40a1-bc1f-7ffb1e7c67e2",
+      "name": "Inserimento Bando in DB",
+      "credentials": {
+        "mongoDb": {
+          "id": "fbvEjAUuMn1jcPXk",
+          "name": "MongoDB account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "testdigitalbusiness1@gmail.com",
+        "subject": "={{ $json.output.priorita == 'Scaduto' ? '⚫️ [SCADUTO] ' : ($json.output.priorita == 'Alta' ? '🚨 [URGENTE] ' : ($json.output.priorita == 'Media' ? '⚠️ [ATTENZIONE] ' : '📋 ')) }}Nuovo Bando Rilevato: {{ $node[\"AI Agent\"].json.output.titolo }}",
+        "message": "=<p>Ciao Team,</p>\n\n<p>Il sistema di monitoraggio ha rilevato un nuovo bando attivo caricato tramite il portale.</p>\n\n<h3>Dettagli del bando:</h3>\n<ul>\n    <li><b>Titolo:</b> {{ $json.output.titolo }}</li>\n    <li><b>Scadenza:</b> <span style=\"color: #d93025;\"><b>{{ $json.output.ScadenzaISO.split('T')[0].split('-').reverse().join('/') }} ore {{ $json.output.ScadenzaISO.split('T')[1].substring(0,5) }}</b></span></li>\n    <li><b>Priorità:</b> <span style=\"color: {{ $json.output.priorita == 'Scaduto' ? '#757575' : ($json.output.priorita == 'Alta' ? '#d93025' : ($json.output.priorita == 'Media' ? '#ef6c00' : '#1a73e8')) }};\"><b>{{ $json.output.priorita }}</b></span></li>\n</ul>\n\n<p><i>L'evento è stato aggiunto automaticamente al Calendario Aziendale per la data della scadenza.</i></p>\n\n<h3>Requisiti Principali:</h3>\n<ul>\n    {{ $json.output.requisiti.map(req => '<li>' + req + '</li>').join('') }}\n</ul>\n\n<br>\n<hr>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        15232,
+        5808
+      ],
+      "id": "b7a9abc9-500e-46eb-914f-3f1ff72b6e65",
+      "name": "Invio Mail",
+      "webhookId": "05c2ae19-74c4-4a9b-9ef2-7945592f5e71",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "glC3XAfzE7uAAia8",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "value": "testdigitalbusiness1@gmail.com",
+          "mode": "list",
+          "cachedResultName": "testdigitalbusiness1@gmail.com"
+        },
+        "start": "={{ $json.output.ScadenzaISO }}",
+        "end": "={{ $json.output.ScadenzaISO }}",
+        "additionalFields": {
+          "color": "={{ $json.output.priorita == 'Scaduto' ? '8' : ($json.output.priorita == 'Alta' ? '11' : ($json.output.priorita == 'Media' ? '4' : '9')) }}",
+          "description": "=Requisiti estratti:\n- {{ $json.output.requisiti.join('\\n- ') }}",
+          "summary": "=⚠️ SCADENZA: {{ $json.output.titolo }}"
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [
+        15232,
+        5616
+      ],
+      "id": "e5dc5fea-b735-4923-9fbd-7378fa5ba767",
+      "name": "Creazione Evento in Calendario",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "VJUHNPqiivrbuv25",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "language": "pythonNative",
+        "pythonCode": "import re\nfrom datetime import datetime\n\n# Ciclo principale su tutti gli elementi ricevuti dal nodo precedente\nfor item in _items:\n    # Estraiamo l'oggetto 'output' generato dal parser dell'Agente AI\n    agente_output = item[\"json\"].get(\"output\", {})\n    \n    # ==========================================\n    # PULIZIA DEI DATI PER IL DATABASE\n    # Rimuoviamo 'gia_presente' da 'output' così MongoDB NON la inserisce nel DB\n    gia_presente = agente_output.pop(\"gia_presente\", None)\n    # ==========================================\n    \n    # Inizializzazione variabili per il calcolo temporale e la priorità\n    scadenza_raw = agente_output.get('scadenza', '')\n    priorita = \"Bassa\"\n    scadenza_iso = \"\"\n    \n    # PARSING DELLA DATA DI SCADENZA\n    if not scadenza_raw or scadenza_raw.lower() == \"non specificato\":\n        priorita = \"Data Mancante\"\n    else:\n        # Normalizziamo la stringa rimuovendo il termine \"ore\" ed eventuali spazi superflui\n        clean = re.sub(r'(?i)ore\\s*', '', scadenza_raw).strip()\n        \n        # Suddividiamo la componente data (DD/MM/YYYY) e quella oraria (HH:MM)\n        parts = re.split(r'\\s+', clean)\n        date_part = parts[0]\n        time_part = parts[1] if len(parts) > 1 else \"23:59\"\n        \n        # Standardizziamo il separatore dell'ora\n        time_part = time_part.replace('.', ':')\n        \n        # Aggiungiamo i secondi (:00) per rispettare lo standard ISO 8601 completo\n        if len(time_part.split(':')) == 2:\n            time_part += \":00\"\n            \n        # Splittiamo i frammenti della data supportando barre (/), punti (.) e trattini (-)\n        date_fragments = re.split(r'[/\\.\\-]', date_part)\n        \n        if len(date_fragments) == 3:\n            # Riconoscimento dinamico del formato (YYYY-MM-DD vs DD-MM-YYYY)\n            if len(date_fragments[0]) == 4:\n                year, month, day = date_fragments\n            else:\n                day, month, year = date_fragments\n                \n            # Padding a due cifre per mese e giorno (es: \"9\" -> \"09\")\n            month = month.zfill(2)\n            day = day.zfill(2)\n            \n            # Generazione stringa ISO 8601 (YYYY-MM-DDTHH:MM:SS) per persistenza e API\n            scadenza_iso = f\"{year}-{month}-{day}T{time_part}\"\n            \n            # CALCOLO E ASSEGNAZIONE PRIORITÀ\n            try:\n                data_scadenza = datetime(int(year), int(month), int(day))\n                data_oggi = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)\n                \n                # Calcolo della differenza in giorni solari residui\n                diff_giorni = (data_scadenza - data_oggi).days\n                \n                # Regole di business basate sulla vicinanza della scadenza\n                if diff_giorni < 0:\n                    priorita = \"Scaduto\"\n                elif 0 <= diff_giorni < 7:\n                    priorita = \"Alta\"\n                elif 7 <= diff_giorni <= 15:\n                    priorita = \"Media\"\n                else:\n                    priorita = \"Bassa\"\n            except ValueError:\n                priorita = \"Errore Calendario\"\n        else:\n            priorita = \"Errore Formato Data\"\n            \n    # Arricchiamo l'oggetto output con i metadati calcolati\n    agente_output[\"priorita\"] = priorita\n    agente_output[\"ScadenzaISO\"] = scadenza_iso\n    \n    # Rimuoviamo la stringa grezza 'scadenza' per mantenere solo lo standard universale ISO\n    agente_output.pop(\"scadenza\", None)\n    \n    # Aggiorniamo il payload: l'output va a MongoDB, gia_presente va solo al frontend/webhook\n    item[\"json\"] = {\n        \"output\": agente_output,\n        \"gia_presente\": gia_presente\n    }\n\n# Restituiamo gli elementi modificati al nodo n8n successivo\nreturn _items"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        14336,
+        5808
+      ],
+      "id": "359d2e0c-30b0-4d6b-a9ae-072ddc15a604",
+      "name": "Calcolo Priorità & Conversione formato orario_Python "
+    },
+    {
+      "parameters": {
+        "language": "pythonNative",
+        "pythonCode": "import pdfplumber\nimport io\nimport re\nimport base64\nimport hashlib\n\n# 1. Recuperiamo l'elemento in ingresso e la stringa Base64 creata dal nodo JavaScript\nitem = _items[0]\nbinary_data = item[\"json\"][\"pdf_base64\"]\n\n# Riconvertiamo la stringa nei byte reali del PDF\npdf_bytes = io.BytesIO(base64.b64decode(binary_data))\n\n# Calcolo Hash MD5 del file originale per identificazione univoca\nfile_hash = hashlib.md5(pdf_bytes.getvalue()).hexdigest()\n\ntesto_pulito = \"\"\npdf_metadata = {}\n\n# 2. Analisi visuale del PDF con pdfplumber\nwith pdfplumber.open(pdf_bytes) as pdf:\n    # Salviamo i metadati nativi del file PDF (es. CreationDate)\n    if pdf.metadata:\n        for k, v in pdf.metadata.items():\n            try:\n                if isinstance(v, bytes):\n                    pdf_metadata[k] = v.decode('utf-8', errors='ignore')\n                else:\n                    pdf_metadata[k] = str(v)\n            except:\n                pass\n                \n    # Aggiungiamo 'enumerate' per tracciare il numero di pagina\n    for i, page in enumerate(pdf.pages):\n        width = page.width\n        height = page.height\n        \n        # 3. RIMOZIONE GEOMETRICA DEL RUMORE\n        # Sulla prima pagina (i=0) il margine superiore è piccolissimo (5%) per salvare il titolo.\n        # Sulle pagine successive applichiamo il taglio standard del 15% per rimuovere intestazioni.\n        if i == 0:\n            top_margin = height * 0.05\n        else:\n            top_margin = height * 0.15\n            \n        bottom_margin = height * 0.90  # Ignora l'ultimo 10% in basso\n        \n        # Definiamo l'area utile (x0, top, x1, bottom)\n        bbox = (0, top_margin, width, bottom_margin)\n        cropped_page = page.crop(bbox)\n        \n        # Estraiamo il testo SOLO dalla parte centrale della pagina\n        page_text = cropped_page.extract_text()\n        \n        if page_text:\n            testo_pulito += page_text + \"\\n\\n\"\n\n# FIX BUG PDFPLUMBER: Decodifica manuale dei caratteri (cid:XX) generati dai font Ghostscript\ndef decodifica_cid(match):\n    try:\n        return chr(int(match.group(1)))\n    except:\n        return match.group(0)\n\ntesto_pulito = re.sub(r'\\(cid:(\\d+)\\)', decodifica_cid, testo_pulito)\n\n# 4. TAGLIO DELLA CODA DEL DOCUMENTO\nart_fine_match = re.search(r'\\nART[\\.\\s]+[56789]\\s*[–\\-]', testo_pulito, re.IGNORECASE)\n\nif not art_fine_match:\n    art_fine_match = re.search(\n        r'\\n\\s*(Modalità di presentazione|Domanda di partecipazione|Presentazione della domanda|Valutazione dei candidati|Commissione giudicatrice)', \n        testo_pulito, \n        re.IGNORECASE\n    )\n\nif art_fine_match:\n    testo_ridotto = testo_pulito[:art_fine_match.start()]\nelse:\n    testo_ridotto = testo_pulito[:6000]\n\ntesto_ridotto = re.sub(r'\\n{3,}', '\\n\\n', testo_ridotto).strip()\n\n# Restituiamo il risultato al formato JSON compatibile con i nodi successivi\nreturn [{\"json\": {\n    \"testo_ridotto\": testo_ridotto,\n    \"file_hash\": file_hash,\n    \"metadati_pdf\": pdf_metadata\n}}]"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        13648,
+        5808
+      ],
+      "id": "1b8525db-9583-47fb-a789-c028f32fc7ef",
+      "name": "Code in Python"
+    },
+    {
+      "parameters": {
+        "jsCode": "let results = [];\nlet i = 0;\n\nfor (let item of $input.all()) {\n  // Prende il file binario e lo converte in testo Base64\n  const binaryData = await this.helpers.getBinaryDataBuffer(i, 'data');\n  item.json.pdf_base64 = binaryData.toString('base64');\n  results.push(item);\n  i++;\n}\n\nreturn results;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        13424,
+        5808
+      ],
+      "id": "cc3961b0-b785-45cf-8bcd-52560eb5d94e",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "collection": "bandi_estratti",
+        "options": {}
+      },
+      "id": "3106a764-8d4a-4b6a-9f86-88bf0468063a",
+      "name": "Fetch Tutti i Bandi",
+      "type": "n8n-nodes-base.mongoDb",
+      "typeVersion": 1.2,
+      "position": [
+        13424,
+        6148
+      ],
+      "credentials": {
+        "mongoDb": {
+          "id": "fbvEjAUuMn1jcPXk",
+          "name": "MongoDB account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "language": "pythonNative",
+        "pythonCode": "from datetime import datetime\n\n# ============================================================\n# BRANCH PARALLELO - Aggiornamento automatico priorita' bandi\n# ============================================================\n# Questo nodo viene eseguito ad ogni attivazione del workflow,\n# in parallelo all'elaborazione del nuovo PDF caricato.\n# Simula il comportamento di un cron notturno: verifica se\n# la priorita' di qualche bando gia' in DB e' cambiata rispetto\n# alla data odierna, e restituisce solo i bandi da aggiornare.\n# ============================================================\n\nrisultati_da_aggiornare = []\n\nfor item in _items:\n    doc = item[\"json\"]\n    output = doc.get(\"output\", {})\n\n    scadenza_iso     = output.get(\"ScadenzaISO\", \"\")\n    priorita_attuale = output.get(\"priorita\", \"\")\n    titolo           = output.get(\"titolo\", \"N/D\")\n\n    # Estrae _id come stringa\n    doc_id_raw = doc.get(\"_id\", \"\")\n    if isinstance(doc_id_raw, dict):\n        doc_id = doc_id_raw.get(\"$oid\", \"\")\n    else:\n        doc_id = str(doc_id_raw)\n\n    if not scadenza_iso or not doc_id:\n        continue\n\n    if priorita_attuale in [\"Data Mancante\", \"Errore Formato Data\", \"Errore Calendario\"]:\n        continue\n\n    try:\n        data_scadenza = datetime.fromisoformat(scadenza_iso.replace(\"Z\", \"\"))\n        data_oggi = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)\n        diff_giorni = (data_scadenza - data_oggi).days\n\n        if diff_giorni < 0:\n            nuova_priorita = \"Scaduto\"\n        elif diff_giorni < 7:\n            nuova_priorita = \"Alta\"\n        elif diff_giorni <= 15:\n            nuova_priorita = \"Media\"\n        else:\n            nuova_priorita = \"Bassa\"\n    except Exception:\n        continue\n\n    if nuova_priorita != priorita_attuale:\n        colori = {\"Scaduto\": \"8\", \"Alta\": \"11\", \"Media\": \"4\", \"Bassa\": \"9\"}\n        risultati_da_aggiornare.append({\"json\": {\n            \"_id\":             doc_id,\n            \"titolo\":          titolo,\n            \"priorita_vecchia\": priorita_attuale,\n            \"priorita_nuova\":   nuova_priorita,\n            \"ScadenzaISO\":     scadenza_iso,\n            \"colore_calendar\": colori.get(nuova_priorita, \"9\"),\n            \"calendar_event_id\": doc.get(\"calendar_event_id\", \"\")\n        }})\n\nreturn risultati_da_aggiornare if risultati_da_aggiornare else [{\"json\": {\"nessun_aggiornamento\": True}}]\n"
+      },
+      "id": "7507fb9a-6632-4496-9993-5737e43f07b5",
+      "name": "Ricalcolo Priorità Bandi",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        13648,
+        6148
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "prio-changed-check",
+              "leftValue": "={{ $json._id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "063d8517-b823-43bb-8fbf-8def9cf210c9",
+      "name": "Priorità Cambiata?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        13992,
+        6148
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nreturn items.map(item => {\n  const iso = item.json.ScadenzaISO || '';\n  return {\n    json: {\n      ...item.json,\n      // Campo con dot-notation: MongoDB interpreta \"output.priorita\" come\n      // campo nested e lo aggiorna con $set senza sovrascrivere il resto\n      \"output.priorita\": item.json.priorita_nuova,\n      // Calcola inizio e fine del giorno della scadenza per la ricerca Calendar\n      giorno_inizio: iso ? iso.split('T')[0] + 'T00:00:00' : '',\n      giorno_fine:   iso ? iso.split('T')[0] + 'T23:59:59' : ''\n    }\n  };\n});\n"
+      },
+      "id": "448daedc-fb7d-49f0-9669-deca81cf9fa4",
+      "name": "Prepara Aggiornamento",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        14336,
+        6148
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "collection": "bandi_estratti",
+        "updateKey": "_id",
+        "fields": "output.priorita",
+        "options": {}
+      },
+      "id": "67ea00d8-e7bd-4a4b-8358-9692934b9547",
+      "name": "Aggiorna Priorità in MongoDB",
+      "type": "n8n-nodes-base.mongoDb",
+      "typeVersion": 1.2,
+      "position": [
+        14560,
+        6148
+      ],
+      "credentials": {
+        "mongoDb": {
+          "id": "fbvEjAUuMn1jcPXk",
+          "name": "MongoDB account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "calendar": {
+          "__rl": true,
+          "value": "testdigitalbusiness1@gmail.com",
+          "mode": "list",
+          "cachedResultName": "testdigitalbusiness1@gmail.com"
+        },
+        "eventId": "={{ $json.calendar_event_id }}",
+        "updateFields": {
+          "color": "={{ $json.colore_calendar }}"
+        }
+      },
+      "id": "77f8196f-7113-4b4b-8749-9013317c1bcb",
+      "name": "Aggiorna Colore Evento",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [
+        15008,
+        6000
+      ],
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "VJUHNPqiivrbuv25",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "testdigitalbusiness1@gmail.com",
+        "subject": "=🔄 Cambio Priorità Bando: {{ $json.titolo }}",
+        "message": "=<p>Ciao Team,</p>\n\n<p>Il sistema di monitoraggio ha aggiornato automaticamente la priorità di un bando nel database.</p>\n\n<h3>&#x1F504; Cambio di Priorità Rilevato:</h3>\n<ul>\n  <li><b>Titolo:</b> {{ $json.titolo }}</li>\n  <li><b>Scadenza:</b> {{ $json.ScadenzaISO.split('T')[0].split('-').reverse().join('/') }}</li>\n  <li><b>Priorità Precedente:</b> {{ $json.priorita_vecchia }}</li>\n  <li><b>Nuova Priorità:</b> <span style=\"color: {{ $json.priorita_nuova == 'Scaduto' ? '#757575' : ($json.priorita_nuova == 'Alta' ? '#d93025' : ($json.priorita_nuova == 'Media' ? '#ef6c00' : '#1a73e8')) }};\"><b>{{ $json.priorita_nuova }}</b></span></li>\n</ul>\n\n<p><i>Aggiornamento automatico eseguito dal workflow n8n ad ogni attivazione.</i></p>\n<hr>",
+        "options": {}
+      },
+      "id": "15ce30cf-b52f-443c-9ee6-39ca83150a7a",
+      "name": "Email Notifica Cambio Priorità",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        15008,
+        6244
+      ],
+      "webhookId": "8894120d-0a17-4e3f-8421-8b021f89b3b6",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "glC3XAfzE7uAAia8",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Il nodo MongoDB Update non restituisce i dati originali in output.\n// Questo nodo recupera i dati da 'Prepara Aggiornamento' e li passa\n// ai nodi Calendar e Gmail, che ne hanno bisogno per funzionare.\nreturn $('Prepara Aggiornamento').all().map(item => ({ json: item.json }));\n"
+      },
+      "id": "887050f5-a2d4-497f-b10a-23fdcf03437a",
+      "name": "Ripristina Dati per Notifiche",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        14784,
+        6148
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Input: risposta di Google Calendar -> ha l'id dell'evento appena creato\n// Recupera anche l'_id MongoDB dal nodo di inserimento (che ora precede sequenzialmente)\n\nconst calendarEventId = $input.first().json.id;\nconst mongoId = $('Inserimento Bando in DB').first().json._id;\n\n// Passa entrambi al nodo MongoDB Update successivo\nreturn [{\n  json: {\n    _id: mongoId,\n    calendar_event_id: calendarEventId\n  }\n}];\n"
+      },
+      "id": "fe19c22f-ad9f-4448-9dcd-c0eaea67e90d",
+      "name": "Prepara Salvataggio ID Evento",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        15456,
+        5616
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "collection": "bandi_estratti",
+        "updateKey": "_id",
+        "fields": "calendar_event_id",
+        "options": {}
+      },
+      "id": "f87754b4-14d4-4c75-bb82-afe08a4bc1aa",
+      "name": "Salva ID Evento in MongoDB",
+      "type": "n8n-nodes-base.mongoDb",
+      "typeVersion": 1.2,
+      "position": [
+        15680,
+        5616
+      ],
+      "credentials": {
+        "mongoDb": {
+          "id": "fbvEjAUuMn1jcPXk",
+          "name": "MongoDB account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Fetch Tutti i Bandi",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Calcolo Priorità & Conversione formato orario_Python ",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find documents in MongoDB": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verifica Presenza Bando in DB": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Inserimento Bando in DB",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verifica Bando Scaduto": {
+      "main": [
+        [
+          {
+            "node": "Creazione Evento in Calendario",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Invio Mail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Inserimento Bando in DB": {
+      "main": [
+        [
+          {
+            "node": "Verifica Bando Scaduto",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calcolo Priorità & Conversione formato orario_Python ": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Verifica Presenza Bando in DB",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in Python": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Code in Python",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Tutti i Bandi": {
+      "main": [
+        [
+          {
+            "node": "Ricalcolo Priorità Bandi",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ricalcolo Priorità Bandi": {
+      "main": [
+        [
+          {
+            "node": "Priorità Cambiata?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Priorità Cambiata?": {
+      "main": [
+        [
+          {
+            "node": "Prepara Aggiornamento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepara Aggiornamento": {
+      "main": [
+        [
+          {
+            "node": "Aggiorna Priorità in MongoDB",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggiorna Priorità in MongoDB": {
+      "main": [
+        [
+          {
+            "node": "Ripristina Dati per Notifiche",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ripristina Dati per Notifiche": {
+      "main": [
+        [
+          {
+            "node": "Aggiorna Colore Evento",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Email Notifica Cambio Priorità",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Creazione Evento in Calendario": {
+      "main": [
+        [
+          {
+            "node": "Prepara Salvataggio ID Evento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepara Salvataggio ID Evento": {
+      "main": [
+        [
+          {
+            "node": "Salva ID Evento in MongoDB",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "ed1508ee-f450-4490-a492-0eabc6d19fa1",
+  "meta": {
+    "instanceId": "08819341f63674fa08c4f4f4416135f02d44ca2f38fb77e35ac77bbdf0cd504b"
+  },
+  "id": "3kS7bpDZq0VKUbfb",
+  "tags": []
+}
