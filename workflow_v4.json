@@ -534,7 +534,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Dopo che Google Calendar crea l'evento, salviamo il suo ID in MongoDB.\n// Questo ci permette di aggiornarlo in futuro senza doverlo cercare per titolo/data.\nconst items = $input.all();\nreturn items.map(item => ({\n  json: {\n    calendar_event_id: item.json.id,  // ID evento restituito da Google Calendar\n    // file_hash del bando: serve come chiave per aggiornare il documento MongoDB corretto\n    file_hash: $('Calcolo Priorit\\u00e0 & Conversione formato orario_Python ').item.json.output.file_hash\n  }\n}));\n"
+        "jsCode": "// Input: risposta di Google Calendar -> ha l'id dell'evento appena creato\n// Recupera anche l'_id MongoDB dal nodo di inserimento (che ora precede sequenzialmente)\n\nconst calendarEventId = $input.first().json.id;\nconst mongoId = $('Inserimento Bando in DB').first().json._id;\n\n// Passa entrambi al nodo MongoDB Update successivo\nreturn [{\n  json: {\n    _id: mongoId,\n    calendar_event_id: calendarEventId\n  }\n}];\n"
       },
       "id": "cc2ee3ff-aaaa-bbbb-cccc-ddddeeee0001",
       "name": "Prepara Salvataggio ID Evento",
@@ -549,7 +549,7 @@
       "parameters": {
         "operation": "update",
         "collection": "bandi_estratti",
-        "updateKey": "file_hash",
+        "updateKey": "_id",
         "fields": "calendar_event_id",
         "options": {}
       },
@@ -641,11 +641,6 @@
         [],
         [
           {
-            "node": "Verifica Bando Scaduto",
-            "type": "main",
-            "index": 0
-          },
-          {
             "node": "Inserimento Bando in DB",
             "type": "main",
             "index": 0
@@ -671,7 +666,13 @@
     },
     "Inserimento Bando in DB": {
       "main": [
-        []
+        [
+          {
+            "node": "Verifica Bando Scaduto",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Parsing del Testo_py": {
