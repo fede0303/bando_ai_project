@@ -32,22 +32,30 @@ Il frontend è configurato specificamente per il monitoraggio e l'estrazione dei
 | Servizio | Tecnologia | Ruolo |
 |----------|------------|-------|
 | **n8n** | n8nio/n8n | Orchestratore dei workflow. Espone l'interfaccia visuale sulla porta 5678 e un broker interno sulla porta 5679 per la comunicazione con il Task Runner. |
-| **n8n-runner** | n8nio/runners | Ambiente di esecuzione isolato per il codice Python e JavaScript definito nei nodi Code di n8n. Le policy di sicurezza (moduli consentiti) sono gestite tramite un file JSON dedicato, montato in sola lettura. |
+| **n8n-runner** | Custom (da `Dockerfile.runner`) | Ambiente di esecuzione isolato per il codice Python e JavaScript dei nodi Code di n8n. Estende l'immagine base `n8nio/runners` con la libreria `pdfplumber` pre-installata. Le policy di sicurezza (moduli consentiti) sono gestite tramite un file JSON dedicato, montato in sola lettura. |
 | **MongoDB** | mongo | Database NoSQL per la persistenza dei dati applicativi. I dati risiedono su un volume Docker e sopravvivono al riavvio dei container. |
 | **Mongo Express** | mongo-express | Interfaccia web di amministrazione del database, accessibile sulla porta 8081. Utile in fase di sviluppo e debug. |
-| **Frontend** | React + Vite | Interfaccia utente. Gira in locale sulla porta 5173 durante lo sviluppo. |
+| **Frontend** | React + Vite + Tailwind CSS v4 | Interfaccia utente. Gira in locale sulla porta 5173 durante lo sviluppo. Usa `pdfjs-dist` per la validazione client-side dei PDF (password, corruzione) prima dell'invio. |
 
 ### Struttura del repository
 
 ```text
 bando-ai-project/
 ├── docker-compose.yml            # Definizione dell'infrastruttura
+├── Dockerfile.runner             # Build custom del Task Runner (aggiunge pdfplumber)
 ├── n8n-task-runners.json         # Policy di esecuzione del Task Runner
+├── workflow_v5.json              # Workflow n8n da importare (versione corrente)
+├── workflow_v4.json              # Versione precedente del workflow (archivio)
 ├── frontend/                     # Applicazione React
 │   ├── src/
+│   │   ├── components/           # Header, DropZone, ResultCard, LoadingSpinner, ErrorState
+│   │   ├── services/api.js       # Logica di comunicazione con il webhook n8n
+│   │   ├── App.jsx
+│   │   └── main.jsx
+│   ├── .env.example              # Template variabile VITE_API_URL (da copiare in .env)
 │   ├── package.json
-│   └── ...
-├── .env.example                  # Template delle variabili d'ambiente
+│   └── vite.config.js
+├── .env.example                  # Template variabili d'ambiente Docker
 ├── .gitignore
 └── README.md
 ```
@@ -75,15 +83,15 @@ cd bando-ai-project
 
 ### 2. Configurare le variabili d'ambiente
 
-Le credenziali di accesso ai servizi non sono versionate per ragioni di sicurezza. Il repository include un file template (`.env.example`) che va duplicato e compilato con i valori concordati internamente.
+Il progetto utilizza **due file `.env`** separati: uno per l'infrastruttura Docker e uno per il frontend.
+
+#### 2a. Variabili Docker (nella cartella principale)
 
 ```bash
 cp .env.example .env
 ```
 
-Aprire il file `.env` appena creato e inserire i valori reali per ciascuna variabile. Il file è già presente nel `.gitignore` e non verrà mai incluso nei commit.
-
-Le variabili richieste sono:
+Aprire il file `.env` appena creato e inserire i valori reali per ciascuna variabile:
 
 | Variabile | Descrizione |
 |-----------|-------------|
@@ -93,7 +101,21 @@ Le variabili richieste sono:
 | `ME_BASICAUTH_USERNAME` | Nome utente per l'accesso a Mongo Express. |
 | `ME_BASICAUTH_PASSWORD` | Password per l'accesso a Mongo Express. |
 
-### 3. Avviare l'infrastruttura
+#### 2b. Variabili frontend (nella cartella `frontend/`)
+
+```bash
+cp frontend/.env.example frontend/.env
+```
+
+Il file pre-compilato punta già al webhook corretto per lo sviluppo locale. Modificarlo solo se si usa un URL diverso:
+
+| Variabile | Descrizione |
+|-----------|-------------|
+| `VITE_API_URL` | URL del webhook n8n che riceve i PDF. In sviluppo: `http://localhost:5678/webhook-test/pdf-upload`. In produzione (workflow attivato): `http://localhost:5678/webhook/pdf-upload`. |
+
+> **Nota:** I file `.env` sono nel `.gitignore` e non verranno mai inclusi nei commit.
+
+### 3. Avviare l'infrastruttura Docker
 
 Assicurarsi che Docker Desktop sia in esecuzione, quindi lanciare:
 
@@ -101,9 +123,25 @@ Assicurarsi che Docker Desktop sia in esecuzione, quindi lanciare:
 docker compose up -d
 ```
 
-Al primo avvio il download delle immagini potrebbe richiedere alcuni minuti. Il flag `-d` esegue i container in background.
+Al primo avvio Docker costruirà l'immagine custom del runner (`Dockerfile.runner`) e scaricherà le immagini degli altri servizi. Questo potrebbe richiedere alcuni minuti. Il flag `-d` esegue i container in background.
 
-### 4. Avviare il frontend
+### 4. Importare il workflow in n8n
+
+> **Questo passaggio è indispensabile.** Senza il workflow, n8n non sa come elaborare i PDF inviati dal frontend.
+
+1. Aprire n8n nel browser: **http://localhost:5678**
+2. Al primo accesso verrà chiesto di creare un account (locale, non richiede email reale).
+3. Una volta dentro, cliccare sul menu in alto a sinistra → **"Workflows"**.
+4. Cliccare su **"Import from File"** (o l'icona di importazione).
+5. Selezionare il file **`workflow_v5.json`** dalla cartella principale del progetto.
+6. Il workflow viene importato. Per poterlo usare con il frontend in modalità sviluppo:
+   - Aprire il workflow.
+   - Cliccare sul nodo **"Webhook"** per aprire il pannello di test.
+   - Tenere aperto n8n durante i test (il webhook-test è attivo solo con l'editor aperto).
+
+> Per l'uso in produzione, attivare il workflow con il toggle in alto a destra e usare `VITE_API_URL=http://localhost:5678/webhook/pdf-upload` nel file `frontend/.env`.
+
+### 5. Avviare il frontend
 
 ```bash
 cd frontend
@@ -169,10 +207,10 @@ Su GitHub, aprire una **Pull Request** verso `main`. Il merge avviene dopo la re
 
 ### Aggiornamento dell'infrastruttura Docker
 
-Se dopo un `git pull` risultano modifiche al file `docker-compose.yml` o al file `.env`, è necessario riavviare i container affinché le nuove configurazioni vengano applicate:
+Se dopo un `git pull` risultano modifiche al file `docker-compose.yml`, al `Dockerfile.runner` o al file `.env`, è necessario riavviare i container (e, se necessario, ricostruire le immagini):
 
 ```bash
-docker compose up -d
+docker compose up -d --build
 ```
 
 Docker riconosce automaticamente quali container necessitano di essere ricreati e lascia invariati quelli non interessati dalle modifiche.
@@ -181,7 +219,7 @@ Docker riconosce automaticamente quali container necessitano di essere ricreati 
 
 ## Note sulla sicurezza
 
-- **Il file `.env` non deve mai essere incluso in un commit.** Contiene le credenziali di accesso ai servizi. Il `.gitignore` ne impedisce il tracciamento, ma è responsabilità di ciascun collaboratore verificare che non venga aggiunto manualmente.
+- **I file `.env` non devono mai essere inclusi in un commit.** Contengono le credenziali di accesso ai servizi. Il `.gitignore` ne impedisce il tracciamento, ma è responsabilità di ciascun collaboratore verificare che non vengano aggiunti manualmente. Questo vale sia per `.env` nella root che per `frontend/.env`.
 
 - **Le policy di esecuzione del codice Python** sono definite nel file `n8n-task-runners.json`, che viene montato in sola lettura nel container del Task Runner. L'architettura di n8n prevede che queste policy vengano lette esclusivamente da file e non da variabili d'ambiente, in modo da garantire un confine di sicurezza indipendente dal container. Qualsiasi modifica a questo file (ad esempio l'aggiunta di moduli nella allowlist) va concordata con il team.
 
@@ -194,8 +232,10 @@ Docker riconosce automaticamente quali container necessitano di essere ricreati 
 | Componente | Tecnologia | Versione |
 |------------|------------|----------|
 | Orchestrazione workflow | [n8n](https://n8n.io/) | latest |
-| Task Runner | [n8n runners](https://docs.n8n.io/hosting/configuration/task-runners/) | latest |
+| Task Runner | [n8n runners](https://docs.n8n.io/hosting/configuration/task-runners/) + pdfplumber | latest |
 | Database | [MongoDB](https://www.mongodb.com/) | latest |
 | Admin DB | [Mongo Express](https://github.com/mongo-express/mongo-express) | latest |
-| Frontend | [React](https://react.dev/) + [Vite](https://vitejs.dev/) | — |
+| Frontend framework | [React](https://react.dev/) + [Vite](https://vitejs.dev/) | v19 / v8 |
+| Stile UI | [Tailwind CSS](https://tailwindcss.com/) | v4 |
+| Validazione PDF client | [pdfjs-dist](https://github.com/mozilla/pdf.js) | v5 |
 | Containerizzazione | [Docker Compose](https://docs.docker.com/compose/) | v2 |
