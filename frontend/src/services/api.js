@@ -4,17 +4,6 @@
  * Contiene la costante WEBHOOK_URL (facilmente modificabile)
  * e la funzione per inviare il PDF e parsare la risposta.
  */
-
-// ── Polyfill Promise.try ──
-// pdfjs-dist v5 usa Promise.try internamente.
-// Disponibile solo in browser recenti (Chrome 130+, Firefox 132+, Safari 18.2+).
-// Questo polyfill garantisce compatibilità con browser più vecchi.
-if (typeof Promise.try !== 'function') {
-  Promise.try = function (fn) {
-    return new Promise((resolve) => resolve()).then(fn);
-  };
-}
-
 import * as pdfjsLib from 'pdfjs-dist';
 // ── Import locale del worker tramite Vite (?url) ──
 // Questo evita qualsiasi dipendenza da CDN e garantisce sempre la versione corretta

@@ -6,6 +6,15 @@
     <title>AI Bando Monitor - Dicatech</title>
     <meta name="description" content="Agente AI per il monitoraggio intelligente di atti e scadenze del Dipartimento Dicatech" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <!-- Polyfill Promise.try: richiesto da pdfjs-dist v5, disponibile solo in browser recenti.
+         Deve essere inline nel <head> per essere eseguito PRIMA del caricamento dei moduli ES. -->
+    <script>
+      if (typeof Promise.try !== 'function') {
+        Promise.try = function (fn) {
+          return new Promise(function (resolve) { resolve(); }).then(fn);
+        };
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
