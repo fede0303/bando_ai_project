@@ -64,9 +64,13 @@ export function validaFile(file) {
  * Controlla se il PDF è protetto da password tentando di aprirlo con pdfjs-dist.
  * Se il file è criptato, pdfjs lancia un PasswordException che intercettiamo.
  *
+ * In caso di altri errori (es. browser non compatibile con pdfjs, Promise.try assente),
+ * la funzione logga un warning ma NON blocca l'invio: la validazione reale avviene
+ * sul backend tramite pdfplumber.
+ *
  * @param {File} file
  * @returns {Promise<void>}
- * @throws {Error} — Se il PDF è protetto da password
+ * @throws {Error} — Solo se il PDF è protetto da password
  */
 async function controllaPdfProtetto(file) {
   try {
@@ -80,10 +84,10 @@ async function controllaPdfProtetto(file) {
         'Il PDF è protetto da password. Rimuovi la protezione prima di caricarlo.'
       );
     }
-    // Per qualsiasi altro errore di parsing (file corrotto, ecc.)
-    throw new Error(
-      'Il file PDF sembra essere corrotto o non leggibile. Prova con un altro file.'
-    );
+    // Per qualsiasi altro errore (pdfjs incompatibile col browser, Promise.try assente,
+    // file non leggibile da pdfjs ma potenzialmente valido): logghiamo e procediamo.
+    // Il backend tramite pdfplumber farà la validazione definitiva.
+    console.warn('[pdfjs] Verifica pre-invio non completata, procedo comunque:', error?.message || error);
   }
 }
 
