@@ -77,8 +77,8 @@ Prima di procedere, verificare di avere installato:
 ### 1. Clonare il repository
 
 ```bash
-git clone https://github.com/fede0303/bando-ai-project.git
-cd bando-ai-project
+git clone https://github.com/fede0303/bando_ai_project.git
+cd bando_ai_project
 ```
 
 ### 2. Configurare le variabili d'ambiente
