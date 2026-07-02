@@ -81,7 +81,8 @@ async function controllaPdfProtetto(file) {
   } catch (error) {
     if (error?.name === 'PasswordException') {
       throw new Error(
-        'Il PDF è protetto da password. Rimuovi la protezione prima di caricarlo.'
+        'Il PDF è protetto da password. Rimuovi la protezione prima di caricarlo.',
+        { cause: error }
       );
     }
     // Per qualsiasi altro errore (pdfjs incompatibile col browser, Promise.try assente,
@@ -187,14 +188,16 @@ export async function inviaAlBackend(file) {
     if (err.name === 'AbortError') {
       throw new Error(
         `Il server non ha risposto entro ${FETCH_TIMEOUT_MS / 1000} secondi. ` +
-        'Il workflow n8n potrebbe essere bloccato o il PDF troppo complesso.'
+        'Il workflow n8n potrebbe essere bloccato o il PDF troppo complesso.',
+        { cause: err }
       );
     }
 
     // ── Gestione errore di connessione/rete (es. Failed to fetch, Load failed in Safari) ──
     if (err instanceof TypeError || err.message?.includes('fetch') || err.message?.includes('Load failed')) {
       throw new Error(
-        'Impossibile connettersi al server. Verifica che la tua connessione internet sia attiva e che il backend n8n sia raggiungibile.'
+        'Impossibile connettersi al server. Verifica che la tua connessione internet sia attiva e che il backend n8n sia raggiungibile.',
+        { cause: err }
       );
     }
 
@@ -224,8 +227,8 @@ export function normalizzaRequisiti(rawRequisiti) {
   // Pulizia: rimuove prefissi residui e capitalizza
   return requisiti
     .map((r) => r.replace(/^[\s\-–—•*]+/, '').trim())       // trattini e bullet
-    .map((r) => r.replace(/^\d+[.):\-]\s*/, '').trim())      // numerazione (1., 2), ecc.)
-    .map((r) => r.replace(/^[a-zA-Z][.):\-]\s*/i, '').trim()) // lettere (a., b), C-, ecc.)
+    .map((r) => r.replace(/^\d+[.):-]\s*/, '').trim())      // numerazione (1., 2), ecc.)
+    .map((r) => r.replace(/^[a-zA-Z][.):-]\s*/i, '').trim()) // lettere (a., b), C-, ecc.)
     .filter((r) => r.length > 2)
     .map((r) => r.charAt(0).toUpperCase() + r.slice(1));
 }

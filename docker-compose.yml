@@ -112,7 +112,7 @@ services:
   # all'interno di MongoDB. Utile per debug e ispezione durante lo sviluppo.
   #
   # Accessibile su: http://localhost:8081
-  # Credenziali di accesso: admin / pass
+  # Credenziali di accesso: vedi ME_BASICAUTH_USERNAME / ME_BASICAUTH_PASSWORD nel file .env
   # ---------------------------------------------------------------------------
   mongo-express:
     image: mongo-express:latest

@@ -6,15 +6,15 @@
  */
 import { useState, useRef, useCallback } from 'react';
 
+// ── Costanti di validazione (module-level per stabilità delle closure) ──
+const MAX_FILE_SIZE_MB = 20;
+const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
+const isPdf = (file) => file && file.name.toLowerCase().endsWith('.pdf');
+
 export default function DropZone({ onFileSelected }) {
   const [isDragOver, setIsDragOver] = useState(false);
   const [fileError, setFileError] = useState('');
   const fileInputRef = useRef(null);
-
-  // ── Costanti di validazione ──
-  const MAX_FILE_SIZE_MB = 20;
-  const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
-  const isPdf = (file) => file && file.name.toLowerCase().endsWith('.pdf');
 
   // ── Gestione del file selezionato ──
   const handleFile = useCallback(
